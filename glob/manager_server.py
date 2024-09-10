@@ -17,7 +17,7 @@ import manager_core as core
 import manager_util
 import cm_global
 
-print(f"### Loading: ComfyUI-Manager ({core.version_str})")
+print(f"### Loading: manager-core ({core.version_str})")
 
 comfy_ui_hash = "-"
 comfyui_tag = None
@@ -45,7 +45,6 @@ def handle_stream(stream, prefix):
 
 
 from comfy.cli_args import args
-import latent_preview
 
 
 is_local_mode = args.listen.startswith('127.') or args.listen.startswith('local.')
@@ -79,16 +78,6 @@ async def get_risky_level(files):
 
 
 class ManagerFuncsInComfyUI(core.ManagerFuncs):
-    def get_current_preview_method(self):
-        if args.preview_method == latent_preview.LatentPreviewMethod.Auto:
-            return "auto"
-        elif args.preview_method == latent_preview.LatentPreviewMethod.Latent2RGB:
-            return "latent2rgb"
-        elif args.preview_method == latent_preview.LatentPreviewMethod.TAESD:
-            return "taesd"
-        else:
-            return "none"
-
     def run_script(self, cmd, cwd='.'):
         if len(cmd) > 0 and cmd[0].startswith("#"):
             print(f"[ComfyUI-Manager] Unexpected behavior: `{cmd}`")
@@ -118,42 +107,12 @@ core.comfy_path = os.path.dirname(folder_paths.__file__)
 core.js_path = os.path.join(core.comfy_path, "web", "extensions")
 
 local_db_model = os.path.join(core.comfyui_manager_path, "model-list.json")
-local_db_alter = os.path.join(core.comfyui_manager_path, "alter-list.json")
 local_db_custom_node_list = os.path.join(core.comfyui_manager_path, "custom-node-list.json")
 local_db_extension_node_mappings = os.path.join(core.comfyui_manager_path, "extension-node-map.json")
-components_path = os.path.join(core.comfyui_manager_path, 'components')
-
-
-def set_preview_method(method):
-    if method == 'auto':
-        args.preview_method = latent_preview.LatentPreviewMethod.Auto
-    elif method == 'latent2rgb':
-        args.preview_method = latent_preview.LatentPreviewMethod.Latent2RGB
-    elif method == 'taesd':
-        args.preview_method = latent_preview.LatentPreviewMethod.TAESD
-    else:
-        args.preview_method = latent_preview.LatentPreviewMethod.NoPreviews
-
-    core.get_config()['preview_method'] = args.preview_method
-
-
-set_preview_method(core.get_config()['preview_method'])
 
 
 def set_badge_mode(mode):
     core.get_config()['badge_mode'] = mode
-
-
-def set_default_ui_mode(mode):
-    core.get_config()['default_ui'] = mode
-
-
-def set_component_policy(mode):
-    core.get_config()['component_policy'] = mode
-
-
-def set_double_click_policy(mode):
-    core.get_config()['double_click_policy'] = mode
 
 
 def print_comfyui_version():
@@ -537,21 +496,6 @@ async def fetch_customnode_list(request):
     result = dict(channel=channel, node_packs=node_packs)
 
     return web.json_response(result, content_type='application/json')
-
-
-@routes.get("/customnode/alternatives")
-async def fetch_customnode_alternatives(request):
-    alter_json = await core.get_data_by_mode(request.rel_url.query["mode"], 'alter-list.json')
-
-    res = {}
-
-    for item in alter_json['items']:
-        populate_markdown(item)
-        res[item['id']] = item
-
-    res = core.map_to_unified_keys(res)
-
-    return web.json_response(res, content_type='application/json')
 
 
 def check_model_installed(json_obj):
@@ -1109,43 +1053,6 @@ async def install_model(request):
     return web.Response(status=400)
 
 
-class ManagerTerminalHook:
-    def write_stderr(self, msg):
-        PromptServer.instance.send_sync("manager-terminal-feedback", {"data": msg})
-
-    def write_stdout(self, msg):
-        PromptServer.instance.send_sync("manager-terminal-feedback", {"data": msg})
-
-
-manager_terminal_hook = ManagerTerminalHook()
-
-
-@routes.get("/manager/terminal")
-async def terminal_mode(request):
-    if not is_allowed_security_level('high'):
-        print(SECURITY_MESSAGE_NORMAL_MINUS)
-        return web.Response(status=403)
-
-    if "mode" in request.rel_url.query:
-        if request.rel_url.query['mode'] == 'true':
-            sys.__comfyui_manager_terminal_hook.add_hook('cm', manager_terminal_hook)
-        else:
-            sys.__comfyui_manager_terminal_hook.remove_hook('cm')
-
-    return web.Response(status=200)
-
-
-@routes.get("/manager/preview_method")
-async def preview_method(request):
-    if "value" in request.rel_url.query:
-        set_preview_method(request.rel_url.query['value'])
-        core.write_config()
-    else:
-        return web.Response(text=core.manager_funcs.get_current_preview_method(), status=200)
-
-    return web.Response(status=200)
-
-
 @routes.get("/manager/badge_mode")
 async def badge_mode(request):
     if "value" in request.rel_url.query:
@@ -1153,39 +1060,6 @@ async def badge_mode(request):
         core.write_config()
     else:
         return web.Response(text=core.get_config()['badge_mode'], status=200)
-
-    return web.Response(status=200)
-
-
-@routes.get("/manager/default_ui")
-async def default_ui_mode(request):
-    if "value" in request.rel_url.query:
-        set_default_ui_mode(request.rel_url.query['value'])
-        core.write_config()
-    else:
-        return web.Response(text=core.get_config()['default_ui'], status=200)
-
-    return web.Response(status=200)
-
-
-@routes.get("/manager/component/policy")
-async def component_policy(request):
-    if "value" in request.rel_url.query:
-        set_component_policy(request.rel_url.query['value'])
-        core.write_config()
-    else:
-        return web.Response(text=core.get_config()['component_policy'], status=200)
-
-    return web.Response(status=200)
-
-
-@routes.get("/manager/dbl_click/policy")
-async def dbl_click_policy(request):
-    if "value" in request.rel_url.query:
-        set_double_click_policy(request.rel_url.query['value'])
-        core.write_config()
-    else:
-        return web.Response(text=core.get_config()['double_click_policy'], status=200)
 
     return web.Response(status=200)
 
@@ -1227,44 +1101,6 @@ def add_target_blank(html_text):
     return modified_html
 
 
-@routes.get("/manager/notice")
-async def get_notice(request):
-    url = "github.com"
-    path = "/ltdrdata/ltdrdata.github.io/wiki/News"
-
-    async with aiohttp.ClientSession(trust_env=True, connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
-        async with session.get(f"https://{url}{path}") as response:
-            if response.status == 200:
-                # html_content = response.read().decode('utf-8')
-                html_content = await response.text()
-
-                pattern = re.compile(r'<div class="markdown-body">([\s\S]*?)</div>')
-                match = pattern.search(html_content)
-
-                if match:
-                    markdown_content = match.group(1)
-                    if comfyui_tag:
-                        markdown_content += f"<HR>ComfyUI: {comfyui_tag}<BR>Commit Date: {core.comfy_ui_commit_datetime.date()}"
-                    else:
-                        markdown_content += f"<HR>ComfyUI: {core.comfy_ui_revision}[{comfy_ui_hash[:6]}]({core.comfy_ui_commit_datetime.date()})"
-                    # markdown_content += f"<BR>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;()"
-                    markdown_content += f"<BR>Manager: {core.version_str}"
-
-                    markdown_content = add_target_blank(markdown_content)
-
-                    try:
-                        if core.comfy_ui_required_commit_datetime.date() > core.comfy_ui_commit_datetime.date():
-                            markdown_content = f'<P style="text-align: center; color:red; background-color:white; font-weight:bold">Your ComfyUI is too OUTDATED!!!</P>' + markdown_content
-                    except:
-                        pass
-
-                    return web.Response(text=markdown_content, status=200)
-                else:
-                    return web.Response(text="Unable to retrieve Notice", status=200)
-            else:
-                return web.Response(text="Unable to retrieve Notice", status=200)
-
-
 @routes.get("/manager/reboot")
 def restart(self):
     if not is_allowed_security_level('middle'):
@@ -1293,58 +1129,6 @@ def restart(self):
 def sanitize_filename(input_string):
     result_string = re.sub(r'[^a-zA-Z0-9_]', '_', input_string)
     return result_string
-
-
-@routes.post("/manager/component/save")
-async def save_component(request):
-    try:
-        data = await request.json()
-        name = data['name']
-        workflow = data['workflow']
-
-        if not os.path.exists(components_path):
-            os.mkdir(components_path)
-
-        if 'packname' in workflow and workflow['packname'] != '':
-            sanitized_name = sanitize_filename(workflow['packname']) + '.pack'
-        else:
-            sanitized_name = sanitize_filename(name) + '.json'
-
-        filepath = os.path.join(components_path, sanitized_name)
-        components = {}
-        if os.path.exists(filepath):
-            with open(filepath) as f:
-                components = json.load(f)
-
-        components[name] = workflow
-
-        with open(filepath, 'w') as f:
-            json.dump(components, f, indent=4, sort_keys=True)
-        return web.Response(text=filepath, status=200)
-    except:
-        return web.Response(status=400)
-
-
-@routes.post("/manager/component/loads")
-async def load_components(request):
-    try:
-        json_files = [f for f in os.listdir(components_path) if f.endswith('.json')]
-        pack_files = [f for f in os.listdir(components_path) if f.endswith('.pack')]
-
-        components = {}
-        for json_file in json_files + pack_files:
-            file_path = os.path.join(components_path, json_file)
-            with open(file_path, 'r') as file:
-                try:
-                    # When there is a conflict between the .pack and the .json, the pack takes precedence and overrides.
-                    components.update(json.load(file))
-                except json.JSONDecodeError as e:
-                    print(f"[ComfyUI-Manager] Error decoding component file in file {json_file}: {e}")
-
-        return web.json_response(components)
-    except Exception as e:
-        print(f"[ComfyUI-Manager] failed to load components\n{e}")
-        return web.Response(status=400)
 
 
 args.enable_cors_header = "*"
@@ -1397,10 +1181,9 @@ async def default_cache_update():
     a = get_cache("custom-node-list.json")
     b = get_cache("extension-node-map.json")
     c = get_cache("model-list.json")
-    d = get_cache("alter-list.json")
     e = get_cache("github-stats.json")
 
-    await asyncio.gather(a, b, c, d, e)
+    await asyncio.gather(a, b, c, e)
 
     if not core.get_config()['skip_migration_check']:
         await core.check_need_to_migrate()
@@ -1415,9 +1198,9 @@ if not os.path.exists(core.config_path):
     core.write_config()
 
 
-cm_global.register_extension('ComfyUI-Manager',
+cm_global.register_extension('manager-core',
                              {'version': core.version,
-                                 'name': 'ComfyUI Manager',
-                                 'nodes': {'Terminal Log //CM'},
-                                 'description': 'It provides the ability to manage custom nodes in ComfyUI.', })
+                                 'name': 'ComfyUI Manager (Essential)',
+                                 'nodes': {},
+                                 'description': 'ComfyUI-Manager (Essential)', })
 

@@ -3,7 +3,7 @@ import { ComfyDialog, $el } from "../../scripts/ui.js";
 import { api } from "../../scripts/api.js";
 
 import {
-	manager_instance, rebootAPI, install_via_git_url,
+	manager_instance, rebootAPI,
 	fetchData, md5, icons, show_message
 } from  "./common.js";
 
@@ -330,7 +330,6 @@ const pageHtml = `
 	<div class="cn-flex-auto"></div>
 	<button class="cn-manager-check-update">Check Update</button>
 	<button class="cn-manager-check-missing">Check Missing</button>
-	<button class="cn-manager-install-url">Install via Git URL</button>
 </div>
 `;
 
@@ -339,7 +338,6 @@ const ShowMode = {
 	UPDATE: "Update",
 	MISSING: "Missing",
 	FAVORITES: "Favorites",
-	ALTERNATIVES: "Alternatives"
 };
 
 export class CustomNodesManager {
@@ -557,10 +555,6 @@ export class CustomNodesManager {
 			label: "Favorites",
 			value: ShowMode.FAVORITES,
 			hasData: false
-		}, {
-			label: "Alternatives of A1111",
-			value: ShowMode.ALTERNATIVES,
-			hasData: false
 		}];
 		this.filterList = filterList;
 		$filter.innerHTML = filterList.map(item => {
@@ -750,15 +744,6 @@ export class CustomNodesManager {
 					this.setFilter(ShowMode.MISSING);
 					this.loadData(ShowMode.MISSING);
 				}
-			},
-
-			".cn-manager-install-url": {
-				click: (e) => {
-					const url = prompt("Please enter the URL of the Git repository to install", "");
-					if (url !== null) {
-						install_via_git_url(url, this.manager_dialog);
-					}
-				}
 			}
 		};
 		Object.keys(eventsMap).forEach(selector => {
@@ -825,7 +810,7 @@ export class CustomNodesManager {
 			bindContainerResize: true,
 
 			cellResizeObserver: (rowItem, columnItem) => {
-				const autoHeightColumns = ['title', 'action', 'description', "alternatives"];
+				const autoHeightColumns = ['title', 'action', 'description'];
 				return autoHeightColumns.includes(columnItem.id)
 			},
 
@@ -833,9 +818,6 @@ export class CustomNodesManager {
 			rowFilter: (rowItem) => {
 
 				const searchableColumns = ["title", "author", "description"];
-				if (this.hasAlternatives()) {
-					searchableColumns.push("alternatives");
-				}
 
 				let shouldShown = grid.highlightKeywordsFilter(rowItem, searchableColumns, this.keywords);
 
@@ -849,10 +831,6 @@ export class CustomNodesManager {
 			}
 		});
 
-	}
-
-	hasAlternatives() {
-		return this.filter === ShowMode.ALTERNATIVES
 	}
 
 	renderGrid() {
@@ -952,13 +930,6 @@ export class CustomNodesManager {
 				const buttons = this.getActionButtons(action, rowItem);
 				return `<div class="cn-install-buttons">${buttons}</div>`;
 			}
-		}, {
-			id: "alternatives",
-			name: "Alternatives",
-			width: 400,
-			maxWidth: 5000,
-			invisible: !this.hasAlternatives(),
-			classMap: 'cn-node-desc'
 		}, {
 			id: 'description',
 			name: 'Description',
@@ -1086,11 +1057,6 @@ export class CustomNodesManager {
 	updateGrid() {
 		if (this.grid) {
 			this.grid.update();
-			if (this.hasAlternatives()) {
-				this.grid.showColumn("alternatives");
-			} else {
-				this.grid.hideColumn("alternatives");
-			}
 		}
 	}
 
@@ -1476,40 +1442,6 @@ export class CustomNodesManager {
 		return hashMap;
 	}
 
-	async getAlternatives() {
-		const mode = manager_instance.datasrc_combo.value;
-		this.showStatus(`Loading alternatives (${mode}) ...`);
-		const res = await fetchData(`/customnode/alternatives?mode=${mode}`);
-		if (res.error) {
-			this.showError(`Failed to get alternatives: ${res.error}`);
-			return [];
-		}
-
-		const hashMap = {};
-		const items = res.data;
-
-		for(let i in items) {
-			let item = items[i];
-			let custom_node = this.custom_nodes[i];
-
-			if (!custom_node) {
-				console.log(`Not found custom node: ${item.id}`);
-				continue;
-			}
-
-			const tags = `${item.tags}`.split(",").map(tag => {
-				return `<div>${tag.trim()}</div>`;
-			}).join("");
-
-			hashMap[custom_node.hash] = {
-				alternatives: `<div class="cn-tag-list">${tags}</div> ${item.description}`
-			}
-
-		}
-	
-		return hashMap;
-	}
-
 	async loadData(show_mode = ShowMode.NORMAL) {
 		this.show_mode = show_mode;
 		console.log("Show mode:", show_mode);
@@ -1557,8 +1489,6 @@ export class CustomNodesManager {
 				}
 			} else if(this.show_mode == ShowMode.MISSING) {
 				hashMap = await this.getMissingNodes();
-			} else if(this.show_mode == ShowMode.ALTERNATIVES) {
-				hashMap = await this.getAlternatives();
 			} else if(this.show_mode == ShowMode.FAVORITES) {
 				hashMap = await this.getFavorites();
 			}

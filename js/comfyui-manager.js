@@ -1,21 +1,9 @@
 import { api } from "../../scripts/api.js";
 import { app } from "../../scripts/app.js";
 import { $el, ComfyDialog } from "../../scripts/ui.js";
-import {
-	SUPPORTED_OUTPUT_NODE_TYPES,
-	ShareDialog,
-	ShareDialogChooser,
-	getPotentialOutputsAndOutputNodes,
-	showOpenArtShareDialog,
-	showShareDialog,
-	showYouMLShareDialog
-} from "./comfyui-share-common.js";
-import { OpenArtShareDialog } from "./comfyui-share-openart.js";
-import { free_models, install_pip, install_via_git_url, manager_instance, rebootAPI, migrateAPI, setManagerInstance, show_message } from "./common.js";
-import { ComponentBuilderDialog, getPureName, load_components, set_component_policy } from "./components-manager.js";
+import { manager_instance, rebootAPI, migrateAPI, setManagerInstance, show_message } from "./common.js";
 import { CustomNodesManager } from "./custom-nodes-manager.js";
 import { ModelManager } from "./model-manager.js";
-import { set_double_click_policy } from "./node_fixer.js";
 import { SnapshotManager } from "./snapshot.js";
 
 var docStyle = document.createElement('style');
@@ -39,7 +27,7 @@ docStyle.innerHTML = `
 
 #cm-manager-dialog {
 	width: 1000px;
-	height: 520px;
+	height: 300px;
 	box-sizing: content-box;
 	z-index: 10000;
 	overflow-y: auto;
@@ -150,27 +138,6 @@ docStyle.innerHTML = `
 #alternatives-grid a:hover {
 	color: #7777FF;
 	text-decoration: underline;
-}
-
-.cm-notice-board {
-	width: 290px;
-	height: 270px;
-	overflow: auto;
-	color: var(--input-text);
-	border: 1px solid var(--descrip-text);
-	padding: 5px 10px;
-	overflow-x: hidden;
-	box-sizing: content-box;
-}
-
-.cm-notice-board > ul {
-	display: block;
-	list-style-type: disc;
-	margin-block-start: 1em;
-	margin-block-end: 1em;
-	margin-inline-start: 0px;
-	margin-inline-end: 0px;
-	padding-inline-start: 40px;
 }
 
 .cm-conflicted-nodes-text {
@@ -391,31 +358,14 @@ const style = `
 `;
 
 
-
 async function init_badge_mode() {
 	api.fetchApi('/manager/badge_mode')
 		.then(response => response.text())
 		.then(data => { badge_mode = data; })
 }
 
-async function init_share_option() {
-	api.fetchApi('/manager/share_option')
-		.then(response => response.text())
-		.then(data => {
-			share_option = data || 'all';
-		});
-}
-
-async function init_notice(notice) {
-	api.fetchApi('/manager/notice')
-		.then(response => response.text())
-		.then(data => {
-			notice.innerHTML = data;
-		})
-}
 
 await init_badge_mode();
-await init_share_option();
 
 async function fetchNicknames() {
 	const response1 = await api.fetchApi(`/customnode/getmappings?mode=nickname`);
@@ -864,38 +814,6 @@ class ManagerMenuDialog extends ComfyDialog {
 	createControlsMid() {
 		let self = this;
 
-		update_comfyui_button =
-			$el("button.cm-button", {
-				type: "button",
-				textContent: "Update ComfyUI",
-				onclick:
-					() => updateComfyUI()
-			});
-
-		switch_comfyui_button =
-			$el("button.cm-button", {
-				type: "button",
-				textContent: "Switch ComfyUI",
-				onclick:
-					() => switchComfyUI()
-			});
-
-		fetch_updates_button =
-			$el("button.cm-button", {
-				type: "button",
-				textContent: "Fetch Updates",
-				onclick:
-					() => fetchUpdates(this.update_check_checkbox)
-			});
-
-		update_all_button =
-			$el("button.cm-button", {
-				type: "button",
-				textContent: "Update All",
-				onclick:
-					() => updateAll(this.update_check_checkbox, self)
-			});
-
 		const res =
 			[
 				$el("button.cm-button", {
@@ -932,37 +850,6 @@ class ManagerMenuDialog extends ComfyDialog {
 								ModelManager.instance = new ModelManager(app, self);
 							}
 							ModelManager.instance.show();
-						}
-				}),
-
-				$el("button.cm-button", {
-					type: "button",
-					textContent: "Install via Git URL",
-					onclick: () => {
-						var url = prompt("Please enter the URL of the Git repository to install", "");
-
-						if (url !== null) {
-							install_via_git_url(url, self);
-						}
-					}
-				}),
-
-				$el("br", {}, []),
-				update_all_button,
-				update_comfyui_button,
-				switch_comfyui_button,
-				fetch_updates_button,
-
-				$el("br", {}, []),
-				$el("button.cm-button", {
-					type: "button",
-					textContent: "Alternatives of A1111",
-					onclick:
-						() => {
-							if(!CustomNodesManager.instance) {
-								CustomNodesManager.instance = new CustomNodesManager(app, self);
-							}
-							CustomNodesManager.instance.show(CustomNodesManager.ShowMode.ALTERNATIVES);
 						}
 				}),
 
@@ -1016,23 +903,6 @@ class ManagerMenuDialog extends ComfyDialog {
 		this.datasrc_combo.appendChild($el('option', { value: 'local', text: 'DB: Local' }, []));
 		this.datasrc_combo.appendChild($el('option', { value: 'url', text: 'DB: Channel (remote)' }, []));
 
-		// preview method
-		let preview_combo = document.createElement("select");
-		preview_combo.setAttribute("title", "Configure how latent variables will be decoded during preview in the sampling process.");
-		preview_combo.className = "cm-menu-combo";
-		preview_combo.appendChild($el('option', { value: 'auto', text: 'Preview method: Auto' }, []));
-		preview_combo.appendChild($el('option', { value: 'taesd', text: 'Preview method: TAESD (slow)' }, []));
-		preview_combo.appendChild($el('option', { value: 'latent2rgb', text: 'Preview method: Latent2RGB (fast)' }, []));
-		preview_combo.appendChild($el('option', { value: 'none', text: 'Preview method: None (very fast)' }, []));
-
-		api.fetchApi('/manager/preview_method')
-			.then(response => response.text())
-			.then(data => { preview_combo.value = data; });
-
-		preview_combo.addEventListener('change', function (event) {
-			api.fetchApi(`/manager/preview_method?value=${event.target.value}`);
-		});
-
 		// nickname
 		let badge_combo = document.createElement("select");
 		badge_combo.setAttribute("title", "Configure the content to be displayed on the badge at the top right corner of the node. The ID is the identifier of the node. If 'hide built-in' is selected, both unknown nodes and built-in nodes will be omitted, making them indistinguishable");
@@ -1080,253 +950,74 @@ class ManagerMenuDialog extends ComfyDialog {
 				}
 			});
 
-		// default ui state
-		let default_ui_combo = document.createElement("select");
-		default_ui_combo.setAttribute("title", "Set the default state to be displayed in the main menu when the browser starts.");
-		default_ui_combo.className = "cm-menu-combo";
-		default_ui_combo.appendChild($el('option', { value: 'none', text: 'Default UI: None' }, []));
-		default_ui_combo.appendChild($el('option', { value: 'history', text: 'Default UI: History' }, []));
-		default_ui_combo.appendChild($el('option', { value: 'queue', text: 'Default UI: Queue' }, []));
-		api.fetchApi('/manager/default_ui')
-			.then(response => response.text())
-			.then(data => { default_ui_combo.value = data; });
-
-		default_ui_combo.addEventListener('change', function (event) {
-			api.fetchApi(`/manager/default_ui?value=${event.target.value}`);
-		});
-
-
-		// share
-		let share_combo = document.createElement("select");
-		share_combo.setAttribute("title", "Hide the share button in the main menu or set the default action upon clicking it. Additionally, configure the default share site when sharing via the context menu's share button.");
-		share_combo.className = "cm-menu-combo";
-		const share_options = [
-			['none', 'None'],
-			['openart', 'OpenArt AI'],
-			['youml', 'YouML'],
-			['matrix', 'Matrix Server'],
-			['comfyworkflows', 'ComfyWorkflows'],
-			['copus', 'Copus'],
-			['all', 'All'],
-		];
-		for (const option of share_options) {
-			share_combo.appendChild($el('option', { value: option[0], text: `Share: ${option[1]}` }, []));
-		}
-
-		// default ui state
-		let component_policy_combo = document.createElement("select");
-		component_policy_combo.setAttribute("title", "When loading the workflow, configure which version of the component to use.");
-		component_policy_combo.className = "cm-menu-combo";
-		component_policy_combo.appendChild($el('option', { value: 'workflow', text: 'Component: Use workflow version' }, []));
-		component_policy_combo.appendChild($el('option', { value: 'higher', text: 'Component: Use higher version' }, []));
-		component_policy_combo.appendChild($el('option', { value: 'mine', text: 'Component: Use my version' }, []));
-		api.fetchApi('/manager/component/policy')
-			.then(response => response.text())
-			.then(data => {
-				component_policy_combo.value = data;
-				set_component_policy(data);
-			});
-
-		component_policy_combo.addEventListener('change', function (event) {
-			api.fetchApi(`/manager/component/policy?value=${event.target.value}`);
-			set_component_policy(event.target.value);
-		});
-
-		let dbl_click_policy_combo = document.createElement("select");
-		dbl_click_policy_combo.setAttribute("title", "Sets the behavior when you double-click the title area of a node.");
-		dbl_click_policy_combo.className = "cm-menu-combo";
-		dbl_click_policy_combo.appendChild($el('option', { value: 'none', text: 'Double-Click: None' }, []));
-		dbl_click_policy_combo.appendChild($el('option', { value: 'copy-all', text: 'Double-Click: Copy All Connections' }, []));
-		dbl_click_policy_combo.appendChild($el('option', { value: 'copy-input', text: 'Double-Click: Copy Input Connections' }, []));
-		dbl_click_policy_combo.appendChild($el('option', { value: 'possible-input', text: 'Double-Click: Possible Input Connections' }, []));
-		dbl_click_policy_combo.appendChild($el('option', { value: 'dual', text: 'Double-Click: Possible(left) + Copy(right)' }, []));
-
-		api.fetchApi('/manager/dbl_click/policy')
-			.then(response => response.text())
-			.then(data => {
-				dbl_click_policy_combo.value = data;
-				set_double_click_policy(data);
-			});
-
-		dbl_click_policy_combo.addEventListener('change', function (event) {
-			api.fetchApi(`/manager/dbl_click/policy?value=${event.target.value}`);
-			set_double_click_policy(event.target.value);
-		});
-
-		api.fetchApi('/manager/share_option')
-			.then(response => response.text())
-			.then(data => {
-				share_combo.value = data || 'all';
-				share_option = data || 'all';
-			});
-
-		share_combo.addEventListener('change', function (event) {
-			const value = event.target.value;
-			share_option = value;
-			api.fetchApi(`/manager/share_option?value=${value}`);
-			const shareButton = document.getElementById("shareButton");
-			if (value === 'none') {
-				shareButton.style.display = "none";
-			} else {
-				shareButton.style.display = "inline-block";
-			}
-		});
 
 		return [
 			$el("div", {}, [this.update_check_checkbox, uc_checkbox_text]),
 			$el("br", {}, []),
 			this.datasrc_combo,
 			channel_combo,
-			preview_combo,
 			badge_combo,
-			default_ui_combo,
-			share_combo,
-			component_policy_combo,
-			dbl_click_policy_combo,
 			$el("br", {}, []),
 
-			$el("br", {}, []),
-			$el("filedset.cm-experimental", {}, [
-					$el("legend.cm-experimental-legend", {}, ["EXPERIMENTAL"]),
-					$el("button.cm-experimental-button", {
-						type: "button",
-						textContent: "Snapshot Manager",
-						onclick:
-							() => {
-								if(!SnapshotManager.instance)
-								SnapshotManager.instance = new SnapshotManager(app, self);
-								SnapshotManager.instance.show();
-							}
-					}),
-					$el("button.cm-experimental-button", {
-						type: "button",
-						textContent: "Install PIP packages",
-						onclick:
-							() => {
-								var url = prompt("Please enumerate the pip packages to be installed.\n\nExample: insightface opencv-python-headless>=4.1.1\n", "");
-
-								if (url !== null) {
-									install_pip(url, self);
-								}
-							}
-					}),
-					$el("button.cm-experimental-button", {
-						type: "button",
-						textContent: "Unload models",
-						onclick: () => { free_models(); }
-					})
-				]),
+            $el("button.cm-button", {
+                type: "button",
+                textContent: "Snapshot Manager",
+                onclick:
+                    () => {
+                        if(!SnapshotManager.instance)
+                        SnapshotManager.instance = new SnapshotManager(app, self);
+                        SnapshotManager.instance.show();
+                    }
+            })
 		];
 	}
 
 	createControlsRight() {
-		const elts = [
-				$el("button.cm-button", {
-					id: 'cm-manual-button',
-					type: "button",
-					textContent: "Community Manual",
-					onclick: () => { window.open("https://blenderneko.github.io/ComfyUI-docs/", "comfyui-community-manual"); }
-				}, [
-					$el("div.pysssss-workflow-arrow-2", {
-						id: `cm-manual-button-arrow`,
-						onclick: (e) => {
-							e.preventDefault();
-							e.stopPropagation();
+		let self = this;
 
-							LiteGraph.closeAllContextMenus();
-							const menu = new LiteGraph.ContextMenu(
-								[
-									{
-										title: "Comfy Custom Node How To",
-										callback: () => { window.open("https://github.com/chrisgoringe/Comfy-Custom-Node-How-To/wiki/aaa_index", "comfyui-community-manual1"); },
-									},
-									{
-										title: "ComfyUI Guide To Making Custom Nodes",
-										callback: () => { window.open("https://github.com/Suzie1/ComfyUI_Guide_To_Making_Custom_Nodes/wiki", "comfyui-community-manual2"); },
-									},
-									{
-										title: "ComfyUI Examples",
-										callback: () => { window.open("https://comfyanonymous.github.io/ComfyUI_examples", "comfyui-community-manual3"); },
-									},
-									{
-										title: "Close",
-										callback: () => {
-											LiteGraph.closeAllContextMenus();
-										},
-									}
-								],
-								{
-									event: e,
-									scale: 1.3,
-								},
-								window
-							);
-							// set the id so that we can override the context menu's z-index to be above the comfyui manager menu
-							menu.root.id = "cm-manual-button-menu";
-							menu.root.classList.add("pysssss-workflow-popup-2");
-						},
-					})
-				]),
+		update_comfyui_button =
+			$el("button.cm-button", {
+				type: "button",
+				textContent: "Update ComfyUI",
+				onclick:
+					() => updateComfyUI()
+			});
 
-				$el("button", {
-					id: 'workflowgallery-button',
-					type: "button",
-					style: {
-						...(localStorage.getItem("wg_last_visited") ? {height: '50px'} : {})
-					},
-					onclick: (e) => {
-						const last_visited_site = localStorage.getItem("wg_last_visited")
-						if (!!last_visited_site) {
-							window.open(last_visited_site, last_visited_site);
-						} else {
-							this.handleWorkflowGalleryButtonClick(e)
-						}
-					},
-				}, [
-					$el("p", {
-						textContent: 'Workflow Gallery',
-						style: {
-							'text-align': 'center',
-							'color': 'var(--input-text)',
-							'font-size': '18px',
-							'margin': 0,
-							'padding': 0,
-						}
-					}, [
-						$el("p", {
-							id: 'workflowgallery-button-last-visited-label',
-							textContent: `(${localStorage.getItem("wg_last_visited") ? localStorage.getItem("wg_last_visited").split('/')[2] : ''})`,
-							style: {
-								'text-align': 'center',
-								'color': 'var(--input-text)',
-								'font-size': '12px',
-								'margin': 0,
-								'padding': 0,
-							}
-						})
-					]),
-					$el("div.pysssss-workflow-arrow-2", {
-						id: `comfyworkflows-button-arrow`,
-						onclick: this.handleWorkflowGalleryButtonClick
-					})
-				]),
+		switch_comfyui_button =
+			$el("button.cm-button", {
+				type: "button",
+				textContent: "Switch ComfyUI",
+				onclick:
+					() => switchComfyUI()
+			});
 
-				$el("button.cm-button", {
-					id: 'cm-nodeinfo-button',
-					type: "button",
-					textContent: "Nodes Info",
-					onclick: () => { window.open("https://ltdrdata.github.io/", "comfyui-node-info"); }
-				}),
-				$el("br", {}, []),
-		];
+		fetch_updates_button =
+			$el("button.cm-button", {
+				type: "button",
+				textContent: "Fetch Updates",
+				onclick:
+					() => fetchUpdates(this.update_check_checkbox)
+			});
 
-		var textarea = document.createElement("div");
-		textarea.className = "cm-notice-board";
-		elts.push(textarea);
+		update_all_button =
+			$el("button.cm-button", {
+				type: "button",
+				textContent: "Update All",
+				onclick:
+					() => updateAll(this.update_check_checkbox, self)
+			});
 
-		init_notice(textarea);
+		const res =
+			[
+				update_all_button,
+                $el("br", {}, []),
+				update_comfyui_button,
+				switch_comfyui_button,
+                $el("br", {}, []),
+				fetch_updates_button
+			];
 
-		return elts;
+		return res;
 	}
 
 	constructor() {
@@ -1338,7 +1029,7 @@ class ManagerMenuDialog extends ComfyDialog {
 				$el("div.comfy-modal-content",
 					[
 						$el("tr.cm-title", {}, [
-								$el("font", {size:6, color:"white"}, [`ComfyUI Manager Menu`])]
+								$el("font", {size:6, color:"white"}, [`ComfyUI Manager (Essential)`])]
 							),
 						$el("br", {}, []),
 						$el("div.cm-menu-container",
@@ -1362,114 +1053,6 @@ class ManagerMenuDialog extends ComfyDialog {
 	show() {
 		this.element.style.display = "block";
 	}
-
-	handleWorkflowGalleryButtonClick(e) {
-		e.preventDefault();
-		e.stopPropagation();
-		LiteGraph.closeAllContextMenus();
-
-		// Modify the style of the button so that the UI can indicate the last
-		// visited site right away.
-		const modifyButtonStyle = (url) => {
-			const workflowGalleryButton = document.getElementById('workflowgallery-button');
-			workflowGalleryButton.style.height = '50px';
-			const lastVisitedLabel = document.getElementById('workflowgallery-button-last-visited-label');
-			lastVisitedLabel.textContent = `(${url.split('/')[2]})`;
-		}
-
-		const menu = new LiteGraph.ContextMenu(
-			[
-				{
-					title: "Share your art",
-					callback: () => {
-						if (share_option === 'openart') {
-							showOpenArtShareDialog();
-							return;
-						} else if (share_option === 'matrix' || share_option === 'comfyworkflows') {
-							showShareDialog(share_option);
-							return;
-						} else if (share_option === 'youml') {
-							showYouMLShareDialog();
-							return;
-						}
-
-						if (!ShareDialogChooser.instance) {
-							ShareDialogChooser.instance = new ShareDialogChooser();
-						}
-						ShareDialogChooser.instance.show();
-					},
-				},
-				{
-					title: "Open 'openart.ai'",
-					callback: () => {
-						const url = "https://openart.ai/workflows/dev";
-						localStorage.setItem("wg_last_visited", url);
-						window.open(url, url);
-						modifyButtonStyle(url);
-					},
-				},
-				{
-					title: "Open 'youml.com'",
-					callback: () => {
-						const url = "https://youml.com/?from=comfyui-share";
-						localStorage.setItem("wg_last_visited", url);
-						window.open(url, url);
-						modifyButtonStyle(url);
-					},
-				},
-				{
-					title: "Open 'comfyworkflows.com'",
-					callback: () => {
-						const url = "https://comfyworkflows.com/";
-						localStorage.setItem("wg_last_visited", url);
-						window.open(url, url);
-						modifyButtonStyle(url);
-					},
-				},
-				{
-					title: "Open 'flowt.ai'",
-					callback: () => {
-						const url = "https://flowt.ai/";
-						localStorage.setItem("wg_last_visited", url);
-						window.open(url, url);
-						modifyButtonStyle(url);
-					},
-				},
-				{
-					title: "Open 'esheep'",
-					callback: () => {
-						const url = "https://www.esheep.com";
-						localStorage.setItem("wg_last_visited", url);
-						window.open(url, url);
-						modifyButtonStyle(url);
-					},
-				},
-				{
-					title: "Open 'Copus.io'",
-					callback: () => {
-						const url = "https://www.copus.io";
-						localStorage.setItem("wg_last_visited", url);
-						window.open(url, url);
-						modifyButtonStyle(url);
-					},
-				},
-				{
-					title: "Close",
-					callback: () => {
-						LiteGraph.closeAllContextMenus();
-					},
-				}
-			],
-			{
-				event: e,
-				scale: 1.3,
-			},
-			window
-		);
-		// set the id so that we can override the context menu's z-index to be above the comfyui manager menu
-		menu.root.id = "workflowgallery-button-menu";
-		menu.root.classList.add("pysssss-workflow-popup-2");
-	}
 }
 
 
@@ -1482,14 +1065,6 @@ app.registerExtension({
 		});
 	},
 	async setup() {
-		let orig_clear = app.graph.clear;
-		app.graph.clear = function () {
-			orig_clear.call(app.graph);
-			load_components();
-		};
-
-		load_components();
-
 		const menu = document.querySelector(".comfy-menu");
 		const separator = document.createElement("hr");
 
@@ -1524,41 +1099,6 @@ app.registerExtension({
                         CustomNodesManager.instance.show(CustomNodesManager.ShowMode.FAVORITES);
 					},
 					tooltip: "Show favorite custom node list"
-				}).element,
-				new(await import("../../scripts/ui/components/button.js")).ComfyButton({
-					icon: "vacuum-outline",
-					action: () => {
-						free_models();
-					},
-					tooltip: "Unload Models"
-				}).element,
-				new(await import("../../scripts/ui/components/button.js")).ComfyButton({
-					icon: "vacuum",
-					action: () => {
-						free_models(true);
-					},
-					tooltip: "Free model and node cache"
-				}).element,
-				new(await import("../../scripts/ui/components/button.js")).ComfyButton({
-					icon: "share",
-					action: () => {
-						if (share_option === 'openart') {
-							showOpenArtShareDialog();
-							return;
-						} else if (share_option === 'matrix' || share_option === 'comfyworkflows') {
-							showShareDialog(share_option);
-							return;
-						} else if (share_option === 'youml') {
-							showYouMLShareDialog();
-							return;
-						}
-
-						if(!ShareDialogChooser.instance) {
-							ShareDialogChooser.instance = new ShareDialogChooser();
-						}
-						ShareDialogChooser.instance.show();
-					},
-					tooltip: "Share"
 				}).element
 			);
 
@@ -1577,37 +1117,6 @@ app.registerExtension({
 				manager_instance.show();
 			}
 		menu.append(managerButton);
-
-		const shareButton = document.createElement("button");
-		shareButton.id = "shareButton";
-		shareButton.textContent = "Share";
-		shareButton.onclick = () => {
-			if (share_option === 'openart') {
-				showOpenArtShareDialog();
-				return;
-			} else if (share_option === 'matrix' || share_option === 'comfyworkflows') {
-				showShareDialog(share_option);
-				return;
-			} else if (share_option === 'youml') {
-				showYouMLShareDialog();
-				return;
-			}
-
-			if(!ShareDialogChooser.instance) {
-				ShareDialogChooser.instance = new ShareDialogChooser();
-			}
-			ShareDialogChooser.instance.show();
-		}
-		// make the background color a gradient of blue to green
-		shareButton.style.background = "linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%)";
-		shareButton.style.color = "black";
-
-		// Load share option from local storage to determine whether to show
-		// the share button.
-		const shouldShowShareButton = share_option !== 'none';
-		shareButton.style.display = shouldShowShareButton ? "inline-block" : "none";
-
-		menu.append(shareButton);
 	},
 
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
@@ -1691,27 +1200,3 @@ app.registerExtension({
 		}
 	},
 });
-
-
-async function set_default_ui()
-{
-	let res = await api.fetchApi('/manager/default_ui');
-	if(res.status == 200) {
-		let mode = await res.text();
-		switch(mode) {
-		case 'history':
-			app.ui.queue.hide();
-			app.ui.history.show();
-			break;
-		case 'queue':
-			app.ui.queue.show();
-			app.ui.history.hide();
-			break;
-		default:
-			// do nothing
-			break;
-		}
-	}
-}
-
-set_default_ui();
