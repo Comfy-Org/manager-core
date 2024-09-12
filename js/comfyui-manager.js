@@ -779,13 +779,6 @@ function newDOMTokenList(initialTokens) {
 	return classList;
 	}
 
-/**
- * Check whether the node is a potential output node (img, gif or video output)
- */
-const isOutputNode = (node) => {
-	return SUPPORTED_OUTPUT_NODE_TYPES.includes(node.type);
-}
-
 // -----------
 class ManagerMenuDialog extends ComfyDialog {
 	createControlsMid() {
@@ -1118,61 +1111,6 @@ app.registerExtension({
 			const orig = node.onDrawForeground;
 			node.getNickname = function () { return getNickname(node, node.type.trim()) };
 			node.onDrawForeground = function (ctx) { drawBadge(node, orig, arguments) };
-		}
-	},
-
-	_addExtraNodeContextMenu(node, app) {
-		const origGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
-		node.prototype.cm_menu_added = true;
-		node.prototype.getExtraMenuOptions = function (_, options) {
-			origGetExtraMenuOptions?.apply?.(this, arguments);
-
-			if (node.category.startsWith('group nodes/')) {
-				options.push({
-					content: "Save As Component",
-					callback: (obj) => {
-						if (!ComponentBuilderDialog.instance) {
-							ComponentBuilderDialog.instance = new ComponentBuilderDialog();
-						}
-						ComponentBuilderDialog.instance.target_node = node;
-						ComponentBuilderDialog.instance.show();
-					}
-				}, null);
-			}
-
-			if (isOutputNode(node)) {
-				const { potential_outputs } = getPotentialOutputsAndOutputNodes([this]);
-				const hasOutput = potential_outputs.length > 0;
-
-				// Check if the previous menu option is `null`. If it's not,
-				// then we need to add a `null` as a separator.
-				if (options[options.length - 1] !== null) {
-					options.push(null);
-				}
-
-				options.push({
-					content: "🏞️ Share Output",
-					disabled: !hasOutput,
-					callback: (obj) => {
-						if (!ShareDialog.instance) {
-							ShareDialog.instance = new ShareDialog();
-						}
-						const shareButton = document.getElementById("shareButton");
-						if (shareButton) {
-							const currentNode = this;
-							if (!OpenArtShareDialog.instance) {
-								OpenArtShareDialog.instance = new OpenArtShareDialog();
-							}
-							OpenArtShareDialog.instance.selectedNodeId = currentNode.id;
-							if (!ShareDialog.instance) {
-								ShareDialog.instance = new ShareDialog(share_option);
-							}
-							ShareDialog.instance.selectedNodeId = currentNode.id;
-							shareButton.click();
-						}
-					}
-				}, null);
-			}
 		}
 	},
 });
