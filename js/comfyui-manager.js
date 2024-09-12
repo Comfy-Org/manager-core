@@ -3,7 +3,6 @@ import { app } from "../../scripts/app.js";
 import { $el, ComfyDialog } from "../../scripts/ui.js";
 import { manager_instance, rebootAPI, migrateAPI, setManagerInstance, show_message } from "./common.js";
 import { CustomNodesManager } from "./custom-nodes-manager.js";
-import { ModelManager } from "./model-manager.js";
 import { SnapshotManager } from "./snapshot.js";
 
 var docStyle = document.createElement('style');
@@ -27,7 +26,7 @@ docStyle.innerHTML = `
 
 #cm-manager-dialog {
 	width: 1000px;
-	height: 300px;
+	height: 330px;
 	box-sizing: content-box;
 	z-index: 10000;
 	overflow-y: auto;
@@ -114,28 +113,6 @@ docStyle.innerHTML = `
 }
 
 #custom-nodes-grid a:hover {
-	color: #7777FF;
-	text-decoration: underline;
-}
-
-#external-models-grid a {
-	color: #5555FF;
-	font-weight: bold;
-	text-decoration: none;
-}
-
-#external-models-grid a:hover {
-	color: #7777FF;
-	text-decoration: underline;
-}
-
-#alternatives-grid a {
-	color: #5555FF;
-	font-weight: bold;
-	text-decoration: none;
-}
-
-#alternatives-grid a:hover {
 	color: #7777FF;
 	text-decoration: underline;
 }
@@ -818,7 +795,19 @@ class ManagerMenuDialog extends ComfyDialog {
 			[
 				$el("button.cm-button", {
 					type: "button",
-					textContent: "Custom Nodes Manager",
+					textContent: "Favorites Node List",
+					onclick:
+						() => {
+							if(!CustomNodesManager.instance) {
+								CustomNodesManager.instance = new CustomNodesManager(app, self);
+							}
+							CustomNodesManager.instance.show(CustomNodesManager.ShowMode.FAVORITES);
+						}
+				}),
+
+				$el("button.cm-button", {
+					type: "button",
+					textContent: "Full Node List",
 					onclick:
 						() => {
 							if(!CustomNodesManager.instance) {
@@ -830,26 +819,13 @@ class ManagerMenuDialog extends ComfyDialog {
 
 				$el("button.cm-button", {
 					type: "button",
-					textContent: "Install Missing Custom Nodes",
+					textContent: "Missing Node List",
 					onclick:
 						() => {
 							if(!CustomNodesManager.instance) {
 								CustomNodesManager.instance = new CustomNodesManager(app, self);
 							}
 							CustomNodesManager.instance.show(CustomNodesManager.ShowMode.MISSING);
-						}
-				}),
-
-				
-				$el("button.cm-button", {
-					type: "button",
-					textContent: "Model Manager",
-					onclick:
-						() => {
-							if(!ModelManager.instance) {
-								ModelManager.instance = new ModelManager(app, self);
-							}
-							ModelManager.instance.show();
 						}
 				}),
 
@@ -1077,17 +1053,6 @@ app.registerExtension({
 			// unload models button into new style Manager button
 			let cmGroup = new (await import("../../scripts/ui/components/buttonGroup.js")).ComfyButtonGroup(
 				new(await import("../../scripts/ui/components/button.js")).ComfyButton({
-					icon: "puzzle",
-					action: () => {
-						if(!manager_instance)
-							setManagerInstance(new ManagerMenuDialog());
-						manager_instance.show();
-					},
-					tooltip: "ComfyUI Manager",
-					content: "Manager",
-					classList: "comfyui-button comfyui-menu-mobile-collapse primary"
-				}).element,
-				new(await import("../../scripts/ui/components/button.js")).ComfyButton({
 					icon: "star",
 					action: () => {
 						if(!manager_instance)
@@ -1098,7 +1063,18 @@ app.registerExtension({
                         }
                         CustomNodesManager.instance.show(CustomNodesManager.ShowMode.FAVORITES);
 					},
-					tooltip: "Show favorite custom node list"
+					tooltip: "Show favorite custom node list",
+					content: "Manager",
+					classList: "comfyui-button comfyui-menu-mobile-collapse primary"
+				}).element,
+				new(await import("../../scripts/ui/components/button.js")).ComfyButton({
+					icon: "puzzle",
+					action: () => {
+						if(!manager_instance)
+							setManagerInstance(new ManagerMenuDialog());
+						manager_instance.show();
+					},
+					tooltip: "ComfyUI Manager",
 				}).element
 			);
 
