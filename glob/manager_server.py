@@ -530,7 +530,7 @@ def unzip_install(files):
                 f.write(data)
 
             with zipfile.ZipFile(temp_filename, 'r') as zip_ref:
-                zip_ref.extractall(core.custom_nodes_path)
+                zip_ref.extractall(core.get_default_custom_nodes_path())
 
             os.remove(temp_filename)
         except Exception as e:
@@ -571,7 +571,7 @@ def copy_install(files, js_path_name=None):
         try:
             filename = os.path.basename(url)
             if url.endswith(".py"):
-                download_url(url, core.custom_nodes_path, filename)
+                download_url(url, core.get_default_custom_nodes_path(), filename)
             else:
                 path = os.path.join(core.js_path, js_path_name) if js_path_name is not None else core.js_path
                 if not os.path.exists(path):
@@ -591,7 +591,7 @@ def copy_uninstall(files, js_path_name='.'):
         if url.endswith("/"):
             url = url[:-1]
         dir_name = os.path.basename(url)
-        base_path = core.custom_nodes_path if url.endswith('.py') else os.path.join(core.js_path, js_path_name)
+        base_path = core.get_default_custom_nodes_path() if url.endswith('.py') else os.path.join(core.js_path, js_path_name)
         file_path = os.path.join(base_path, dir_name)
 
         try:
@@ -617,7 +617,7 @@ def copy_set_active(files, is_disable, js_path_name='.'):
         if url.endswith("/"):
             url = url[:-1]
         dir_name = os.path.basename(url)
-        base_path = core.custom_nodes_path if url.endswith('.py') else os.path.join(core.js_path, js_path_name)
+        base_path = core.get_default_custom_nodes_path() if url.endswith('.py') else os.path.join(core.js_path, js_path_name)
         file_path = os.path.join(base_path, dir_name)
 
         try:
@@ -832,44 +832,11 @@ async def update_custom_node(request):
     return web.Response(status=400)
 
 
-@routes.get("/comfyui_manager/update_comfyui")
-async def update_comfyui(request):
-    print(f"Update ComfyUI")
-
-    try:
-        repo_path = os.path.dirname(folder_paths.__file__)
-        res = core.update_path(repo_path)
-        if res == "fail":
-            print(f"ComfyUI update fail: The installed ComfyUI does not have a Git repository.")
-            return web.Response(status=400)
-        elif res == "updated":
-            return web.Response(status=201)
-        else:  # skipped
-            return web.Response(status=200)
-    except Exception as e:
-        print(f"ComfyUI update fail: {e}", file=sys.stderr)
-
-    return web.Response(status=400)
-
-
 @routes.get("/comfyui_manager/comfyui_versions")
 async def comfyui_versions(request):
     try:
         res, current = core.get_comfyui_versions()
         return web.json_response({'versions': res, 'current': current}, status=200, content_type='application/json')
-    except Exception as e:
-        print(f"ComfyUI update fail: {e}", file=sys.stderr)
-
-    return web.Response(status=400)
-
-
-@routes.get("/comfyui_manager/comfyui_switch_version")
-async def comfyui_switch_version(request):
-    try:
-        if "ver" in request.rel_url.query:
-            core.switch_comfyui(request.rel_url.query['ver'])
-
-        return web.Response(status=200)
     except Exception as e:
         print(f"ComfyUI update fail: {e}", file=sys.stderr)
 

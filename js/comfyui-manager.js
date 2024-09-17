@@ -701,28 +701,27 @@ async function fetchUpdates(update_check_checkbox) {
 
 async function updateAll(update_check_checkbox, manager_dialog) {
 	let prev_text = update_all_button.innerText;
-	update_all_button.innerText = "Updating all...(ComfyUI)";
+	update_all_button.innerText = "Updating all custom nodes...";
 	update_all_button.disabled = true;
 	update_all_button.style.backgroundColor = "gray";
 
 	try {
 		var mode = manager_instance.datasrc_combo.value;
 
-		update_all_button.innerText = "Updating all...";
-		const response1 = await api.fetchApi('/comfyui_manager/update_comfyui');
-		const response2 = await api.fetchApi(`/customnode/update_all?mode=${mode}`);
+		update_all_button.innerText = "Updating all custom nodes...";
+		const response = await api.fetchApi(`/customnode/update_all?mode=${mode}`);
 
-		if (response2.status == 403) {
+		if (response.status == 403) {
 			show_message('This action is not allowed with this security level configuration.');
 			return false;
 		}
 
-		if (response1.status == 400 || response2.status == 400) {
+		if (response.status == 400) {
 			show_message('Failed to update ComfyUI or several extensions.<BR><BR>See terminal log.<BR>');
 			return false;
 		}
 
-		if(response1.status == 201 || response2.status == 201) {
+		if(response.status == 201) {
 			const update_info = await response2.json();
 
 			let failed_list = "";
@@ -736,7 +735,7 @@ async function updateAll(update_check_checkbox, manager_dialog) {
 			}
 
 			show_message(
-				"ComfyUI and all extensions have been updated to the latest version.<BR>To apply the updated custom node, please <button class='cm-small-button' id='cm-reboot-button5'>RESTART</button> ComfyUI. And refresh browser.<BR>"
+				"All extensions have been updated to the latest version.<BR>To apply the updated custom node, please <button class='cm-small-button' id='cm-reboot-button5'>RESTART</button> ComfyUI. And refresh browser.<BR>"
 				+failed_list
 				+updated_list
 				);
@@ -750,7 +749,7 @@ async function updateAll(update_check_checkbox, manager_dialog) {
 				});
 		}
 		else {
-			show_message('ComfyUI and all extensions are already up-to-date with the latest versions.');
+			show_message('All extensions are already up-to-date with the latest versions.');
 		}
 
 		return true;
@@ -944,22 +943,6 @@ class ManagerMenuDialog extends ComfyDialog {
 	createControlsRight() {
 		let self = this;
 
-		update_comfyui_button =
-			$el("button.cm-button", {
-				type: "button",
-				textContent: "Update ComfyUI",
-				onclick:
-					() => updateComfyUI()
-			});
-
-		switch_comfyui_button =
-			$el("button.cm-button", {
-				type: "button",
-				textContent: "Switch ComfyUI",
-				onclick:
-					() => switchComfyUI()
-			});
-
 		fetch_updates_button =
 			$el("button.cm-button", {
 				type: "button",
@@ -971,7 +954,7 @@ class ManagerMenuDialog extends ComfyDialog {
 		update_all_button =
 			$el("button.cm-button", {
 				type: "button",
-				textContent: "Update All",
+				textContent: "Update All Custom Nodes",
 				onclick:
 					() => updateAll(this.update_check_checkbox, self)
 			});
@@ -979,9 +962,6 @@ class ManagerMenuDialog extends ComfyDialog {
 		const res =
 			[
 				update_all_button,
-                $el("br", {}, []),
-				update_comfyui_button,
-				switch_comfyui_button,
                 $el("br", {}, []),
 				fetch_updates_button
 			];
