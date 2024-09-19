@@ -41,11 +41,27 @@ DEFAULT_CHANNEL = "https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/ma
 # default custom nodes path
 custom_nodes_path = os.path.abspath(os.path.join(comfyui_manager_path, '..'))
 
+default_custom_nodes_path = None
+
+
 def get_default_custom_nodes_path():
-    return custom_nodes_path
+    global default_custom_nodes_path
+    if default_custom_nodes_path is None:
+        try:
+            import folder_paths
+            default_custom_nodes_path = folder_paths.get_folder_paths("custom_nodes")[0]
+        except:
+            default_custom_nodes_path = custom_nodes_path
+
+    return default_custom_nodes_path
+
 
 def get_custom_nodes_paths():
-    return [custom_nodes_path]
+        try:
+            import folder_paths
+            return folder_paths.get_folder_paths("custom_nodes")
+        except:
+            return [custom_nodes_path]
 
 
 invalid_nodes = {}
@@ -1421,7 +1437,6 @@ def write_config():
     config = configparser.ConfigParser()
     config['default'] = {
         'preview_method': manager_funcs.get_current_preview_method(),
-        'badge_mode': get_config()['badge_mode'],
         'git_exe':  get_config()['git_exe'],
         'channel_url': get_config()['channel_url'],
         'share_option': get_config()['share_option'],
@@ -1457,7 +1472,6 @@ def read_config():
 
         return {
                     'preview_method': default_conf['preview_method'] if 'preview_method' in default_conf else manager_funcs.get_current_preview_method(),
-                    'badge_mode': default_conf['badge_mode'] if 'badge_mode' in default_conf else 'none',
                     'git_exe': default_conf['git_exe'] if 'git_exe' in default_conf else '',
                     'channel_url': default_conf['channel_url'] if 'channel_url' in default_conf else DEFAULT_CHANNEL,
                     'share_option': default_conf['share_option'] if 'share_option' in default_conf else 'all',
@@ -1476,7 +1490,6 @@ def read_config():
     except Exception:
         return {
             'preview_method': manager_funcs.get_current_preview_method(),
-            'badge_mode': 'none',
             'git_exe': '',
             'channel_url': DEFAULT_CHANNEL,
             'share_option': 'all',

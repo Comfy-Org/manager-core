@@ -88,24 +88,6 @@ docStyle.innerHTML = `
 	vertical-align: middle;
 }
 
-#cm-channel-badge {
-	color: white;
-	background-color: #AA0000;
-	width: 220px;
-	height: 23px;
-	font-size: 13px;
-	border-radius: 5px;
-	left: 5px;
-	top: 5px;
-	align-content: center;
-	justify-content: center;
-	text-align: center;
-	font-weight: bold;
-	float: left;
-	vertical-align: middle;
-	position: relative;
-}
-
 #custom-nodes-grid a {
 	color: #5555FF;
 	font-weight: bold;
@@ -152,7 +134,6 @@ var update_comfyui_button = null;
 var switch_comfyui_button = null;
 var fetch_updates_button = null;
 var update_all_button = null;
-var badge_mode = "none";
 let share_option = 'all';
 
 // copied style from https://github.com/pythongosssss/ComfyUI-Custom-Scripts
@@ -334,16 +315,6 @@ const style = `
 }
 `;
 
-
-async function init_badge_mode() {
-	api.fetchApi('/manager/badge_mode')
-		.then(response => response.text())
-		.then(data => { badge_mode = data; })
-}
-
-
-await init_badge_mode();
-
 async function fetchNicknames() {
 	const response1 = await api.fetchApi(`/customnode/getmappings?mode=nickname`);
 	const mappings = await response1.json();
@@ -407,65 +378,6 @@ function getNickname(node, nodename) {
 		return node.nickname;
 	}
 }
-
-function drawBadge(node, orig, restArgs) {
-	let ctx = restArgs[0];
-	const r = orig?.apply?.(node, restArgs);
-
-	if (!node.flags.collapsed && badge_mode != 'none' && node.constructor.title_mode != LiteGraph.NO_TITLE) {
-		let text = "";
-		if (badge_mode.startsWith('id_nick'))
-			text = `#${node.id} `;
-
-		let nick = node.getNickname();
-		if (nick) {
-			if (nick == 'ComfyUI') {
-				if(badge_mode.endsWith('hide')) {
-					nick = "";
-				}
-				else {
-					nick = "🦊"
-				}
-			}
-
-			if (nick.length > 25) {
-				text += nick.substring(0, 23) + "..";
-			}
-			else {
-				text += nick;
-			}
-		}
-
-		if (text != "") {
-			let fgColor = "white";
-			let bgColor = "#0F1F0F";
-			let visible = true;
-
-			ctx.save();
-			ctx.font = "12px sans-serif";
-			const sz = ctx.measureText(text);
-			ctx.fillStyle = bgColor;
-			ctx.beginPath();
-			ctx.roundRect(node.size[0] - sz.width - 12, -LiteGraph.NODE_TITLE_HEIGHT - 20, sz.width + 12, 20, 5);
-			ctx.fill();
-
-			ctx.fillStyle = fgColor;
-			ctx.fillText(text, node.size[0] - sz.width - 6, -LiteGraph.NODE_TITLE_HEIGHT - 6);
-			ctx.restore();
-
-			if (node.has_errors) {
-				ctx.save();
-				ctx.font = "bold 14px sans-serif";
-				const sz2 = ctx.measureText(node.type);
-				ctx.fillStyle = 'white';
-				ctx.fillText(node.type, node.size[0] / 2 - sz2.width / 2, node.size[1] / 2);
-				ctx.restore();
-			}
-		}
-	}
-	return r;
-}
-
 
 async function updateComfyUI() {
 	let prev_text = update_comfyui_button.innerText;
@@ -871,29 +783,9 @@ class ManagerMenuDialog extends ComfyDialog {
 		this.datasrc_combo.appendChild($el('option', { value: 'local', text: 'DB: Local' }, []));
 		this.datasrc_combo.appendChild($el('option', { value: 'url', text: 'DB: Channel (remote)' }, []));
 
-		// nickname
-		let badge_combo = document.createElement("select");
-		badge_combo.setAttribute("title", "Configure the content to be displayed on the badge at the top right corner of the node. The ID is the identifier of the node. If 'hide built-in' is selected, both unknown nodes and built-in nodes will be omitted, making them indistinguishable");
-		badge_combo.className = "cm-menu-combo";
-		badge_combo.appendChild($el('option', { value: 'none', text: 'Badge: None' }, []));
-		badge_combo.appendChild($el('option', { value: 'nick', text: 'Badge: Nickname' }, []));
-		badge_combo.appendChild($el('option', { value: 'nick_hide', text: 'Badge: Nickname (hide built-in)' }, []));
-		badge_combo.appendChild($el('option', { value: 'id_nick', text: 'Badge: #ID Nickname' }, []));
-		badge_combo.appendChild($el('option', { value: 'id_nick_hide', text: 'Badge: #ID Nickname (hide built-in)' }, []));
-
-		api.fetchApi('/manager/badge_mode')
-			.then(response => response.text())
-			.then(data => { badge_combo.value = data; badge_mode = data; });
-
-		badge_combo.addEventListener('change', function (event) {
-			api.fetchApi(`/manager/badge_mode?value=${event.target.value}`);
-			badge_mode = event.target.value;
-			app.graph.setDirtyCanvas(true);
-		});
-
 		// channel
 		let channel_combo = document.createElement("select");
-		channel_combo.setAttribute("title", "Configure the channel for retrieving data from the Custom Node list (including missing nodes) or the Model list. Note that the badge utilizes local information.");
+		channel_combo.setAttribute("title", "Configure the channel for retrieving data from the Custom Node list (including missing nodes) or the Model list.");
 		channel_combo.className = "cm-menu-combo";
 		api.fetchApi('/manager/channel_url_list')
 			.then(response => response.json())
@@ -924,7 +816,6 @@ class ManagerMenuDialog extends ComfyDialog {
 			$el("br", {}, []),
 			this.datasrc_combo,
 			channel_combo,
-			badge_combo,
 			$el("br", {}, []),
 
             $el("button.cm-button", {
@@ -1070,27 +961,5 @@ app.registerExtension({
 
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
 		this._addExtraNodeContextMenu(nodeType, app);
-	},
-
-	async nodeCreated(node, app) {
-		if(!node.badge_enabled) {
-			node.getNickname = function () { return getNickname(node, node.comfyClass.trim()) };
-			let orig = node.onDrawForeground;
-			if(!orig)
-				orig = node.__proto__.onDrawForeground;
-
-			node.onDrawForeground = function (ctx) {
-				drawBadge(node, orig, arguments)
-			};
-			node.badge_enabled = true;
-		}
-	},
-
-	async loadedGraphNode(node, app) {
-		if(!node.badge_enabled) {
-			const orig = node.onDrawForeground;
-			node.getNickname = function () { return getNickname(node, node.type.trim()) };
-			node.onDrawForeground = function (ctx) { drawBadge(node, orig, arguments) };
-		}
 	},
 });
