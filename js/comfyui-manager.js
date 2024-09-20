@@ -957,9 +957,5 @@ app.registerExtension({
 				manager_instance.show();
 			}
 		menu.append(managerButton);
-	},
-
-	async beforeRegisterNodeDef(nodeType, nodeData, app) {
-		this._addExtraNodeContextMenu(nodeType, app);
-	},
+	}
 });

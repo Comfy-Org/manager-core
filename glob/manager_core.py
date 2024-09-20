@@ -2938,8 +2938,8 @@ async def check_need_to_migrate():
 
     if len(legacy_custom_nodes) > 0:
         print("\n--------------------- ComfyUI-Manager migration notice --------------------")
-        print("The following custom nodes were installed using the old management method and require migration:")
-        print(", ".join(legacy_custom_nodes))
+        print("The following custom nodes were installed using the old management method and require migration:\n")
+        print("\n".join(legacy_custom_nodes))
         print("---------------------------------------------------------------------------\n")
         need_to_migrate = True
 
