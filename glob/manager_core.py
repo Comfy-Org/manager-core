@@ -176,6 +176,13 @@ def get_installed_packages():
 
     return pip_map
 
+def call_cli_dependencies():
+    try:
+        result = subprocess.check_output([sys.executable, '-m', 'comfy_cli', 'dependencies'], universal_newlines=True)
+        return result, False
+    except subprocess.CalledProcessError as e:
+        print("[ComfyUI-Manager] Failed to execute the command 'comfy-cli dependencies'.")
+        return None, True
 
 def clear_pip_cache():
     global pip_map

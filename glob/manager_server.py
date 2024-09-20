@@ -716,14 +716,20 @@ async def install_custom_node(request):
         print(SECURITY_MESSAGE_GENERAL)
         return web.Response(status=404)
 
+    no_deps = json_data.get('noDeps', False)
+
     node_spec = core.unified_manager.resolve_node_spec(node_spec_str)
 
     if node_spec is None:
         return
+    
+    import pdb; pdb.set_trace()
 
     node_name, version_spec, is_specified = node_spec
-    res = await core.unified_manager.install_by_id(node_name, version_spec, json_data['channel'], json_data['mode'], return_postinstall=skip_post_install)
+    res = await core.unified_manager.install_by_id(node_name, version_spec, json_data['channel'], json_data['mode'], return_postinstall=skip_post_install, no_deps=no_deps)
     # discard post install if skip_post_install mode
+
+    core.call_cli_dependencies()
 
     if res not in ['skip', 'enable', 'install-git', 'install-cnr', 'switch-cnr']:
         return web.Response(status=400)
@@ -954,6 +960,7 @@ def sanitize(data):
 
 
 async def _confirm_try_install(sender, custom_node_url, msg):
+    import pdb; pdb.set_trace()
     json_obj = await core.get_data_by_mode('default', 'custom-node-list.json')
 
     sender = manager_util.sanitize_tag(sender)
