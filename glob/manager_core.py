@@ -67,6 +67,15 @@ def get_custom_nodes_paths():
 invalid_nodes = {}
 
 
+def extract_base_custom_nodes_dir(x:str):
+    if os.path.dirname(x).endswith('.disabled'):
+        return os.path.dirname(os.path.dirname(x))
+    elif x.endswith('.disabled'):
+        return os.path.dirname(x)
+    else:
+        return os.path.dirname(x)
+
+
 def check_invalid_nodes():
     global invalid_nodes
 
@@ -957,13 +966,15 @@ class UnifiedManager:
             from_path = repo_and_path[1]
             # NOTE: Keep original name as possible if unknown node
             # to_path = os.path.join(get_default_custom_nodes_path(), f"{node_id}@unknown")
-            to_path = os.path.join(get_default_custom_nodes_path(), node_id)
+            base_path = extract_base_custom_nodes_dir(from_path)
+            to_path = os.path.join(base_path, node_id)
         elif version_spec == 'nightly':
             self.unified_disable(node_id, False)
             from_path = self.nightly_inactive_nodes.get(node_id)
             if from_path is None:
                 return result.fail(f'Specified inactive node not exists: {node_id}@nightly')
-            to_path = os.path.join(get_default_custom_nodes_path(), f"{node_id}@nightly")
+            base_path = extract_base_custom_nodes_dir(from_path)
+            to_path = os.path.join(base_path, f"{node_id}@nightly")
         elif version_spec is not None:
             self.unified_disable(node_id, False)
             cnr_info = self.cnr_inactive_nodes.get(node_id)
@@ -978,7 +989,8 @@ class UnifiedManager:
                 return result.fail(f'Specified inactive node not exists: {node_id}@{version_spec}')
 
             from_path = cnr_info[version_spec]
-            to_path = os.path.join(get_default_custom_nodes_path(), f"{node_id}@{version_spec.replace('.', '_')}")
+            base_path = extract_base_custom_nodes_dir(from_path)
+            to_path = os.path.join(base_path, f"{node_id}@{version_spec.replace('.', '_')}")
 
         if from_path is None or not os.path.exists(from_path):
             return result.fail(f'Specified inactive node path not exists: {from_path}')
@@ -1015,12 +1027,15 @@ class UnifiedManager:
 
         if is_unknown:
             repo_and_path = self.unknown_active_nodes.get(node_id)
-            # NOTE: Keep original name as possible if unknown node
-            # to_path = os.path.join(get_default_custom_nodes_path(), '.disabled', f"{node_id}@unknown")
-            to_path = os.path.join(get_default_custom_nodes_path(), '.disabled', node_id)
 
             if repo_and_path is None or not os.path.exists(repo_and_path[1]):
                 return result.fail(f'Specified active node not exists: {node_id}')
+
+            base_path = extract_base_custom_nodes_dir(repo_and_path[1])
+
+            # NOTE: Keep original name as possible if unknown node
+            # to_path = os.path.join(get_default_custom_nodes_path(), '.disabled', f"{node_id}@unknown")
+            to_path = os.path.join(base_path, '.disabled', node_id)
 
             shutil.move(repo_and_path[1], to_path)
             result.append((repo_and_path[1], to_path))
@@ -1035,7 +1050,8 @@ class UnifiedManager:
         if ver_and_path is None or not os.path.exists(ver_and_path[1]):
             return result.fail(f'Specified active node not exists: {node_id}')
 
-        to_path = os.path.join(get_default_custom_nodes_path(), '.disabled', f"{node_id}@{ver_and_path[0].replace('.', '_')}")
+        base_path = extract_base_custom_nodes_dir(ver_and_path[1])
+        to_path = os.path.join(base_path, '.disabled', f"{node_id}@{ver_and_path[0].replace('.', '_')}")
         shutil.move(ver_and_path[1], to_path)
         result.append((ver_and_path[1], to_path))
 
@@ -2058,7 +2074,8 @@ def gitclone_set_active(files, is_disable):
 
                 if is_disable:
                     current_path = dir_path
-                    new_path = os.path.join(get_default_custom_nodes_path(), ".disabled", dir_name)
+                    base_path = extract_base_custom_nodes_dir(current_path)
+                    new_path = os.path.join(base_path, ".disabled", dir_name)
 
                     if not os.path.exists(current_path):
                         continue
@@ -2073,7 +2090,8 @@ def gitclone_set_active(files, is_disable):
                     else:
                         continue
 
-                    new_path = dir_path
+                    base_path = extract_base_custom_nodes_dir(current_path)
+                    new_path = os.path.join(base_path, dir_name)
 
                 shutil.move(current_path, new_path)
 
