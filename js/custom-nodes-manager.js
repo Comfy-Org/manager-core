@@ -1229,7 +1229,7 @@ export class CustomNodesManager {
 
 			const res = await api.fetchApi(`/customnode/${api_mode}`, {
 				method: 'POST',
-				body: JSON.stringify(data)
+				body: JSON.stringify({ ...data, noDeps: true })
 			});
 
 			if (res.error) {
