@@ -723,13 +723,12 @@ async def install_custom_node(request):
     if node_spec is None:
         return
     
-    import pdb; pdb.set_trace()
-
     node_name, version_spec, is_specified = node_spec
     res = await core.unified_manager.install_by_id(node_name, version_spec, json_data['channel'], json_data['mode'], return_postinstall=skip_post_install, no_deps=no_deps)
     # discard post install if skip_post_install mode
 
-    core.call_cli_dependencies()
+    if no_deps:
+        core.call_cli_dependencies()
 
     if res not in ['skip', 'enable', 'install-git', 'install-cnr', 'switch-cnr']:
         return web.Response(status=400)

@@ -15,7 +15,7 @@ def test_call_cli_dependencies_success(mocker):
 
     assert result == "Mocked dependencies output"
     assert error_occurred is False
-    mock_check_output.assert_called_once_with([sys.executable, '-m', 'comfy-cli', 'dependencies'], universal_newlines=True)
+    mock_check_output.assert_called_once_with([sys.executable, '-m', 'comfy_cli', 'dependency'], universal_newlines=True)
 
 
 def test_call_cli_dependencies_failure(mocker):
@@ -34,4 +34,4 @@ def test_call_cli_dependencies_failure(mocker):
 
     assert result is None
     assert error_occurred is True
-    assert "[ComfyUI-Manager] Failed to execute the command 'comfy-cli dependencies'." in captured_output.getvalue()
+    assert "[ComfyUI-Manager] Failed to execute the command 'python -m comfy_cli dependency'." in captured_output.getvalue()

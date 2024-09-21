@@ -178,10 +178,10 @@ def get_installed_packages():
 
 def call_cli_dependencies():
     try:
-        result = subprocess.check_output([sys.executable, '-m', 'comfy_cli', 'dependencies'], universal_newlines=True)
+        result = subprocess.check_output([sys.executable, '-m', 'comfy_cli', 'dependency'], universal_newlines=True)
         return result, False
     except subprocess.CalledProcessError as e:
-        print("[ComfyUI-Manager] Failed to execute the command 'comfy-cli dependencies'.")
+        print("[ComfyUI-Manager] Failed to execute the command 'python -m comfy_cli dependency'.")
         return None, True
 
 def clear_pip_cache():
