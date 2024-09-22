@@ -746,38 +746,6 @@ async def fix_custom_node(request):
     return web.Response(status=400)
 
 
-@routes.post("/customnode/install/git_url")
-async def install_custom_node_git_url(request):
-    if not is_allowed_security_level('high'):
-        print(SECURITY_MESSAGE_NORMAL_MINUS)
-        return web.Response(status=403)
-
-    url = await request.text()
-    res = await core.gitclone_install(url)
-
-    if res.action == 'skip':
-        print(f"Already installed: '{res.target}'")
-        return web.Response(status=200)
-    elif res.result:
-        print(f"After restarting ComfyUI, please refresh the browser.")
-        return web.Response(status=200)
-
-    print(res.msg)
-    return web.Response(status=400)
-
-
-@routes.post("/customnode/install/pip")
-async def install_custom_node_git_url(request):
-    if not is_allowed_security_level('high'):
-        print(SECURITY_MESSAGE_NORMAL_MINUS)
-        return web.Response(status=403)
-
-    packages = await request.text()
-    core.pip_install(packages.split(' '))
-
-    return web.Response(status=200)
-
-
 @routes.post("/customnode/uninstall")
 async def uninstall_custom_node(request):
     if not is_allowed_security_level('middle'):
