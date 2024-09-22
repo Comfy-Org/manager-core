@@ -918,6 +918,14 @@ def restart(self):
         return os.execv(sys.executable, [sys.executable] + sys.argv)
 
 
+@routes.get("/manager/show_menu")
+def show_menu(self):
+    if cm_global.variables['manager-core.show_menu']:
+        return web.Response(status=200)
+    else:
+        return web.Response(status=201)
+
+
 def sanitize_filename(input_string):
     result_string = re.sub(r'[^a-zA-Z0-9_]', '_', input_string)
     return result_string
@@ -995,3 +1003,5 @@ cm_global.register_extension('manager-core',
                                  'nodes': {},
                                  'description': 'ComfyUI-Manager (Essential)', })
 
+if 'manager-core.show_menu' not in cm_global.variables:
+    cm_global.variables['manager-core.show_menu'] = True

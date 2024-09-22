@@ -912,50 +912,49 @@ app.registerExtension({
 		separator.style.width = "100%";
 		menu.append(separator);
 
-		try {
-			// new style Manager buttons
-			// unload models button into new style Manager button
-			let cmGroup = new (await import("../../scripts/ui/components/buttonGroup.js")).ComfyButtonGroup(
-				new(await import("../../scripts/ui/components/button.js")).ComfyButton({
-					icon: "star",
-					action: () => {
-						if(!manager_instance)
-							setManagerInstance(new ManagerMenuDialog());
+        const resp = await api.fetchApi('/manager/show_menu');
+
+        if(resp.status == 200) {
+            // new style Manager buttons
+            // unload models button into new style Manager button
+            let cmGroup = new (await import("../../scripts/ui/components/buttonGroup.js")).ComfyButtonGroup(
+                new(await import("../../scripts/ui/components/button.js")).ComfyButton({
+                    icon: "star",
+                    action: () => {
+                        if(!manager_instance)
+                            setManagerInstance(new ManagerMenuDialog());
 
                         if(!CustomNodesManager.instance) {
                             CustomNodesManager.instance = new CustomNodesManager(app, self);
                         }
                         CustomNodesManager.instance.show(CustomNodesManager.ShowMode.FAVORITES);
-					},
-					tooltip: "Show favorite custom node list",
-					content: "Manager",
-					classList: "comfyui-button comfyui-menu-mobile-collapse primary"
-				}).element,
-				new(await import("../../scripts/ui/components/button.js")).ComfyButton({
-					icon: "puzzle",
-					action: () => {
-						if(!manager_instance)
-							setManagerInstance(new ManagerMenuDialog());
-						manager_instance.show();
-					},
-					tooltip: "ComfyUI Manager",
-				}).element
-			);
+                    },
+                    tooltip: "Show favorite custom node list",
+                    content: "Manager",
+                    classList: "comfyui-button comfyui-menu-mobile-collapse primary"
+                }).element,
+                new(await import("../../scripts/ui/components/button.js")).ComfyButton({
+                    icon: "puzzle",
+                    action: () => {
+                        if(!manager_instance)
+                            setManagerInstance(new ManagerMenuDialog());
+                        manager_instance.show();
+                    },
+                    tooltip: "ComfyUI Manager",
+                }).element
+            );
 
-			app.menu?.settingsGroup.element.before(cmGroup.element);
-		}
-		catch(exception) {
-			console.log('ComfyUI is outdated. New style menu based features are disabled.');
-		}
+            app.menu?.settingsGroup.element.before(cmGroup.element);
 
-		// old style Manager button
-		const managerButton = document.createElement("button");
-		managerButton.textContent = "Manager";
-		managerButton.onclick = () => {
-				if(!manager_instance)
-					setManagerInstance(new ManagerMenuDialog());
-				manager_instance.show();
-			}
-		menu.append(managerButton);
+            // old style Manager button
+            const managerButton = document.createElement("button");
+            managerButton.textContent = "Manager";
+            managerButton.onclick = () => {
+                    if(!manager_instance)
+                        setManagerInstance(new ManagerMenuDialog());
+                    manager_instance.show();
+                }
+            menu.append(managerButton);
+		}
 	}
 });
