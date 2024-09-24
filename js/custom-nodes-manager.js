@@ -1229,7 +1229,7 @@ export class CustomNodesManager {
 
 			const res = await api.fetchApi(`/customnode/${api_mode}`, {
 				method: 'POST',
-				body: JSON.stringify({ ...data, noDeps: true })
+                body: JSON.stringify(manager_instance.use_uv_install_checkbox.checked ? { ...data, noDeps: true } : data)
 			});
 
 			if (res.error) {
@@ -1256,6 +1256,12 @@ export class CustomNodesManager {
 			//console.log(res.data);
 
 		}
+
+        if (manager_instance.use_uv_install_checkbox.checked) {
+            const res = await api.fetchApi(`/customnode/uv-install-deps`, {
+                method: 'POST',
+            });
+        }
 
 		target.classList.remove("cn-btn-loading");
 

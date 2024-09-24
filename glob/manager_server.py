@@ -727,13 +727,33 @@ async def install_custom_node(request):
     res = await core.unified_manager.install_by_id(node_name, version_spec, json_data['channel'], json_data['mode'], return_postinstall=skip_post_install, no_deps=no_deps)
     # discard post install if skip_post_install mode
 
-    if no_deps:
-        core.call_cli_dependencies()
-
     if res not in ['skip', 'enable', 'install-git', 'install-cnr', 'switch-cnr']:
         return web.Response(status=400)
 
     return web.Response(status=200)
+
+@routes.post("/customnode/uv-install-deps")
+async def uv_install_deps(request):
+    if not is_allowed_security_level('middle'):
+        print(SECURITY_MESSAGE_MIDDLE_OR_BELOW)
+        return web.Response(status=403)
+
+    json_data = await request.json()
+    node_id = json_data.get('id')
+    pip_dependencies = json_data.get('pip', [])
+
+    if not pip_dependencies:
+        return web.Response(status=400, text="No dependencies provided")
+
+    try:
+        result = core.call_cli_dependencies()
+        if result:
+            return web.Response(status=200, text="Dependencies installed successfully")
+        else:
+            return web.Response(status=500, text="Failed to install dependencies")
+    except Exception as e:
+        return web.Response(status=500, text=f"Error installing dependencies: {str(e)}")
+
 
 
 @routes.post("/customnode/fix")
@@ -895,6 +915,16 @@ async def channel_url_list(request):
 
     return web.Response(status=200)
 
+@routes.get("/manager/uv-install")
+async def uv_install(request):
+    if "value" in request.rel_url.query:
+        value = request.rel_url.query['value'].lower() == 'true'
+        core.get_config()['use_uv_install'] = value
+        core.write_config()
+        return web.Response(status=200)
+    else:
+        return web.json_response({"use_uv_install": core.get_config().get('use_uv_install', False)}, status=200)
+
 
 def add_target_blank(html_text):
     pattern = r'(<a\s+href="[^"]*"\s*[^>]*)(>)'
@@ -959,7 +989,6 @@ def sanitize(data):
 
 
 async def _confirm_try_install(sender, custom_node_url, msg):
-    import pdb; pdb.set_trace()
     json_obj = await core.get_data_by_mode('default', 'custom-node-list.json')
 
     sender = manager_util.sanitize_tag(sender)

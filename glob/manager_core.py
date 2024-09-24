@@ -1473,6 +1473,7 @@ def write_config():
         'downgrade_blacklist': get_config()['downgrade_blacklist'],
         'security_level': get_config()['security_level'],
         'skip_migration_check': get_config()['skip_migration_check'],
+        'use_uv_install': get_config()['use_uv_install'],
     }
     with open(config_path, 'w') as configfile:
         config.write(configfile)
@@ -1507,7 +1508,8 @@ def read_config():
                     'model_download_by_agent': default_conf['model_download_by_agent'].lower() == 'true' if 'model_download_by_agent' in default_conf else False,
                     'downgrade_blacklist': default_conf['downgrade_blacklist'] if 'downgrade_blacklist' in default_conf else '',
                     'skip_migration_check': default_conf['skip_migration_check'].lower() == 'true' if 'skip_migration_check' in default_conf else False,
-                    'security_level': security_level
+                    'security_level': security_level,
+                    'use_uv_install': default_conf['use_uv_install'].lower() == 'true' if 'use_uv_install' in default_conf else False,
                }
 
     except Exception:
@@ -1526,6 +1528,7 @@ def read_config():
             'downgrade_blacklist': '',
             'skip_migration_check': False,
             'security_level': 'normal',
+            'use_uv_install': False,
         }
 
 
@@ -1652,7 +1655,6 @@ def __win_check_git_pull(path):
 
 
 def execute_install_script(url, repo_path, lazy_mode=False, instant_execution=False, no_deps=False):
-    # import ipdb; ipdb.set_trace()
     install_script_path = os.path.join(repo_path, "install.py")
     requirements_path = os.path.join(repo_path, "requirements.txt")
 

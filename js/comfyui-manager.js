@@ -775,6 +775,12 @@ class ManagerMenuDialog extends ComfyDialog {
 		uc_checkbox_text.style.cursor = "pointer";
 		this.update_check_checkbox.checked = true;
 
+        this.use_uv_install_checkbox = $el("input", { type: 'checkbox', id: "use_uv_install" }, [])
+        const use_uv_checkbox_text = $el("label", { for: "use_uv_install" }, [" Use UV Install"])
+        use_uv_checkbox_text.style.color = "var(--fg-color)";
+        use_uv_checkbox_text.style.cursor = "pointer";
+        this.use_uv_install_checkbox.checked = false;
+
 		// db mode
 		this.datasrc_combo = document.createElement("select");
 		this.datasrc_combo.setAttribute("title", "Configure where to retrieve node/model information. If set to 'local,' the channel is ignored, and if set to 'channel (remote),' it fetches the latest information each time the list is opened.");
@@ -809,10 +815,33 @@ class ManagerMenuDialog extends ComfyDialog {
 
 				}
 			});
+        api.fetchApi('/manager/uv-install')
+            .then(response => response.json())
+            .then(data => {
+                this.use_uv_install_checkbox.checked = data.use_uv_install;
+
+                this.use_uv_install_checkbox.addEventListener('change', function (event) {
+                    api.fetchApi(`/manager/uv-install?value=${event.target.checked}`)
+                        .then(response => {
+                            if (response.status !== 200) {
+                                console.error("Failed to update UV Install setting");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error updating UV Install setting:", error);
+                        });
+                });
+
+
+            })
+            .catch(error => {
+                console.error("Error fetching initial UV Install setting:", error);
+            });
 
 
 		return [
 			$el("div", {}, [this.update_check_checkbox, uc_checkbox_text]),
+            $el("div", {}, [this.use_uv_install_checkbox, use_uv_checkbox_text]),
 			$el("br", {}, []),
 			this.datasrc_combo,
 			channel_combo,
