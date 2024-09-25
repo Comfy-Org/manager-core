@@ -881,17 +881,6 @@ async def need_to_migrate(request):
     return web.Response(text=str(core.need_to_migrate), status=200)
 
 
-@routes.get("/manager/badge_mode")
-async def badge_mode(request):
-    if "value" in request.rel_url.query:
-        set_badge_mode(request.rel_url.query['value'])
-        core.write_config()
-    else:
-        return web.Response(text=core.get_config()['badge_mode'], status=200)
-
-    return web.Response(status=200)
-
-
 @routes.get("/manager/channel_url_list")
 async def channel_url_list(request):
     channels = core.get_channel_dict()
