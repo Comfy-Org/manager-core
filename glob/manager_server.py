@@ -121,10 +121,6 @@ local_db_custom_node_list = os.path.join(core.comfyui_manager_path, "custom-node
 local_db_extension_node_mappings = os.path.join(core.comfyui_manager_path, "extension-node-map.json")
 
 
-def set_badge_mode(mode):
-    core.get_config()['badge_mode'] = mode
-
-
 def print_comfyui_version():
     global comfy_ui_hash
     global comfyui_tag
@@ -854,17 +850,6 @@ async def migrate_unmanaged_nodes(request):
 @routes.get("/manager/need_to_migrate")
 async def need_to_migrate(request):
     return web.Response(text=str(core.need_to_migrate), status=200)
-
-
-@routes.get("/manager/badge_mode")
-async def badge_mode(request):
-    if "value" in request.rel_url.query:
-        set_badge_mode(request.rel_url.query['value'])
-        core.write_config()
-    else:
-        return web.Response(text=core.get_config()['badge_mode'], status=200)
-
-    return web.Response(status=200)
 
 
 @routes.get("/manager/channel_url_list")
