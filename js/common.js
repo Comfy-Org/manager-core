@@ -13,6 +13,12 @@ export async function sleep(ms) {
 
 export function rebootAPI() {
 	if (confirm("Are you sure you'd like to reboot the server?")) {
+    if ('electronAPI' in window) {
+      console.log("Electron is here. Restarting app using electron.")
+      window.electronAPI.restartApp();
+      return true;
+    }
+    
 		try {
 			api.fetchApi("/manager/reboot");
 		}
