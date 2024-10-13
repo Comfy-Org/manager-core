@@ -988,7 +988,7 @@ async def default_cache_update():
 
 threading.Thread(target=lambda: asyncio.run(default_cache_update())).start()
 
-if not os.path.exists(core.config_path):
+if not os.path.exists(core.manager_core_config_path):
     core.get_config()
     core.write_config()
 

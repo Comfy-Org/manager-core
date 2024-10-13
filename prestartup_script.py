@@ -18,6 +18,11 @@ import security_check
 from manager_util import *
 import cm_global
 
+import folder_paths
+
+
+manager_core_config_path = os.path.abspath(os.path.join(folder_paths.get_user_directory(), 'default', 'manager-core.ini'))
+
 security_check.security_check()
 
 cm_global.pip_blacklist = ['torch', 'torchsde', 'torchvision']
@@ -48,9 +53,8 @@ def check_file_logging():
     global enable_file_logging
     try:
         import configparser
-        config_path = os.path.join(os.path.dirname(__file__), "config.ini")
         config = configparser.ConfigParser()
-        config.read(config_path)
+        config.read(manager_core_config_path)
         default_conf = config['default']
 
         if 'file_logging' in default_conf and default_conf['file_logging'].lower() == 'false':
@@ -347,9 +351,8 @@ else:
 def read_downgrade_blacklist():
     try:
         import configparser
-        config_path = os.path.join(os.path.dirname(__file__), "config.ini")
         config = configparser.ConfigParser()
-        config.read(config_path)
+        config.read(manager_core_config_path)
         default_conf = config['default']
 
         if 'downgrade_blacklist' in default_conf:
@@ -368,13 +371,12 @@ def check_bypass_ssl():
     try:
         import configparser
         import ssl
-        config_path = os.path.join(os.path.dirname(__file__), "config.ini")
         config = configparser.ConfigParser()
-        config.read(config_path)
+        config.read(manager_core_config_path)
         default_conf = config['default']
 
         if 'bypass_ssl' in default_conf and default_conf['bypass_ssl'].lower() == 'true':
-            print(f"[ComfyUI-Manager] WARN: Unsafe - SSL verification bypass option is Enabled. (see ComfyUI-Manager/config.ini)")
+            print(f"[ComfyUI-Manager] WARN: Unsafe - SSL verification bypass option is Enabled. (see {manager_core_config_path})")
             ssl._create_default_https_context = ssl._create_unverified_context  # SSL certificate error fix.
     except Exception:
         pass
@@ -652,9 +654,8 @@ del pip_map
 def check_windows_event_loop_policy():
     try:
         import configparser
-        config_path = os.path.join(os.path.dirname(__file__), "config.ini")
         config = configparser.ConfigParser()
-        config.read(config_path)
+        config.read(manager_core_config_path)
         default_conf = config['default']
 
         if 'windows_selector_event_loop_policy' in default_conf and default_conf['windows_selector_event_loop_policy'].lower() == 'true':

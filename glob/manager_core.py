@@ -128,7 +128,14 @@ if comfy_path is None:
     comfy_path = os.path.abspath(os.path.join(custom_nodes_path, '..'))
 
 channel_list_path = os.path.join(comfyui_manager_path, 'channels.list')
-config_path = os.path.join(comfyui_manager_path, "config.ini")
+try:
+    import folder_paths
+    manager_core_config_path = os.path.abspath(os.path.join(folder_paths.get_user_directory(), 'default', 'manager-core.ini'))
+except Exception:
+    # fallback:
+    # This case is only possible when running with cm-cli, and in practice, this case is not actually used.
+    manager_core_config_path = os.path.abspath(os.path.join(comfyui_manager_path, 'manager-core.ini'))
+
 startup_script_path = os.path.join(comfyui_manager_path, "startup-scripts")
 git_script_path = os.path.join(comfyui_manager_path, "git_helper.py")
 cached_config = None
@@ -1467,14 +1474,14 @@ def write_config():
         'security_level': get_config()['security_level'],
         'skip_migration_check': get_config()['skip_migration_check'],
     }
-    with open(config_path, 'w') as configfile:
+    with open(manager_core_config_path, 'w') as configfile:
         config.write(configfile)
 
 
 def read_config():
     try:
         config = configparser.ConfigParser()
-        config.read(config_path)
+        config.read(manager_core_config_path)
         default_conf = config['default']
 
         # policy migration: disable_unsecure_features -> security_level
