@@ -1438,9 +1438,6 @@ class ManagerFuncs:
     def __init__(self):
         pass
 
-    def get_current_preview_method(self):
-        return "none"
-
     def run_script(self, cmd, cwd='.'):
         if len(cmd) > 0 and cmd[0].startswith("#"):
             print(f"[ComfyUI-Manager] Unexpected behavior: `{cmd}`")
@@ -1459,7 +1456,6 @@ manager_funcs = ManagerFuncs()
 def write_config():
     config = configparser.ConfigParser()
     config['default'] = {
-        'preview_method': manager_funcs.get_current_preview_method(),
         'git_exe':  get_config()['git_exe'],
         'channel_url': get_config()['channel_url'],
         'share_option': get_config()['share_option'],
@@ -1494,7 +1490,6 @@ def read_config():
             security_level = default_conf['security_level'] if 'security_level' in default_conf else 'normal'
 
         return {
-                    'preview_method': default_conf['preview_method'] if 'preview_method' in default_conf else manager_funcs.get_current_preview_method(),
                     'git_exe': default_conf['git_exe'] if 'git_exe' in default_conf else '',
                     'channel_url': default_conf['channel_url'] if 'channel_url' in default_conf else DEFAULT_CHANNEL,
                     'share_option': default_conf['share_option'] if 'share_option' in default_conf else 'all',
@@ -1512,7 +1507,6 @@ def read_config():
 
     except Exception:
         return {
-            'preview_method': manager_funcs.get_current_preview_method(),
             'git_exe': '',
             'channel_url': DEFAULT_CHANNEL,
             'share_option': 'all',
