@@ -1470,6 +1470,11 @@ def write_config():
         'security_level': get_config()['security_level'],
         'skip_migration_check': get_config()['skip_migration_check'],
     }
+    
+    directory = os.path.dirname(manager_core_config_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
     with open(manager_core_config_path, 'w') as configfile:
         config.write(configfile)
 
