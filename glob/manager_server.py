@@ -712,19 +712,44 @@ async def install_custom_node(request):
         print(SECURITY_MESSAGE_GENERAL)
         return web.Response(status=404)
 
+    no_deps = json_data.get('noDeps', False)
+
     node_spec = core.unified_manager.resolve_node_spec(node_spec_str)
 
     if node_spec is None:
         return
-
+    
     node_name, version_spec, is_specified = node_spec
-    res = await core.unified_manager.install_by_id(node_name, version_spec, json_data['channel'], json_data['mode'], return_postinstall=skip_post_install)
+    res = await core.unified_manager.install_by_id(node_name, version_spec, json_data['channel'], json_data['mode'], return_postinstall=skip_post_install, no_deps=no_deps)
     # discard post install if skip_post_install mode
 
     if res not in ['skip', 'enable', 'install-git', 'install-cnr', 'switch-cnr']:
         return web.Response(status=400)
 
     return web.Response(status=200)
+
+@routes.post("/customnode/uv-install-deps")
+async def uv_install_deps(request):
+    if not is_allowed_security_level('middle'):
+        print(SECURITY_MESSAGE_MIDDLE_OR_BELOW)
+        return web.Response(status=403)
+
+    json_data = await request.json()
+    node_id = json_data.get('id')
+    pip_dependencies = json_data.get('pip', [])
+
+    if not pip_dependencies:
+        return web.Response(status=400, text="No dependencies provided")
+
+    try:
+        result = core.call_cli_dependencies()
+        if result:
+            return web.Response(status=200, text="Dependencies installed successfully")
+        else:
+            return web.Response(status=500, text="Failed to install dependencies")
+    except Exception as e:
+        return web.Response(status=500, text=f"Error installing dependencies: {str(e)}")
+
 
 
 @routes.post("/customnode/fix")
@@ -874,6 +899,16 @@ async def channel_url_list(request):
         return web.json_response(res, status=200)
 
     return web.Response(status=200)
+
+@routes.get("/manager/uv-install")
+async def uv_install(request):
+    if "value" in request.rel_url.query:
+        value = request.rel_url.query['value'].lower() == 'true'
+        core.get_config()['use_uv_install'] = value
+        core.write_config()
+        return web.Response(status=200)
+    else:
+        return web.json_response({"use_uv_install": core.get_config().get('use_uv_install', False)}, status=200)
 
 
 def add_target_blank(html_text):
