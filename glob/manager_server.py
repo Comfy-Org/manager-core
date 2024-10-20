@@ -908,10 +908,14 @@ def restart(self):
         exit(0)
 
     print(f"\nRestarting... [Legacy Mode]\n\n")
+
+    sys_argv = sys.argv.copy()
+    sys_argv.remove('--windows-standalone-build')
+
     if sys.platform.startswith('win32'):
-        return os.execv(sys.executable, ['"' + sys.executable + '"', '"' + sys.argv[0] + '"'] + sys.argv[1:])
+        return os.execv(sys.executable, ['"' + sys.executable + '"', '"' + sys_ argv[0] + '"'] + sys_argv[1:])
     else:
-        return os.execv(sys.executable, [sys.executable] + sys.argv)
+        return os.execv(sys.executable, [sys.executable] + sys_argv)
 
 
 @routes.get("/manager/show_menu")
