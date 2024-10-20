@@ -913,7 +913,7 @@ def restart(self):
     sys_argv.remove('--windows-standalone-build')
 
     if sys.platform.startswith('win32'):
-        return os.execv(sys.executable, ['"' + sys.executable + '"', '"' + sys_ argv[0] + '"'] + sys_argv[1:])
+        return os.execv(sys.executable, ['"' + sys.executable + '"', '"' + sys_argv[0] + '"'] + sys_argv[1:])
     else:
         return os.execv(sys.executable, [sys.executable] + sys_argv)
 
