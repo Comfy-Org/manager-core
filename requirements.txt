@@ -1,0 +1,7 @@
+GitPython
+PyGithub
+transformers
+huggingface-hub>0.20
+typer
+rich
+typing-extensions
