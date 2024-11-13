@@ -16,11 +16,8 @@ import re
 import git
 
 sys.path.append(os.path.dirname(__file__))
-sys.path.append(os.path.join(os.path.dirname(__file__), "glob"))
-import cm_global
-import manager_core as core
-from manager_core import unified_manager
-import cnr_utils
+from .glob import cm_global, manager_core as core, cnr_utils
+from .glob.manager_core import unified_manager
 
 comfyui_manager_path = os.path.abspath(os.path.dirname(__file__))
 comfy_path = os.environ.get('COMFYUI_PATH')
