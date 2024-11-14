@@ -29,7 +29,7 @@ import cnr_utils
 from manager_util import *
 
 
-version_code = [1, 1, 1]
+version_code = [1, 1, 2]
 version_str = f"V{version_code[0]}.{version_code[1]}" + (f'.{version_code[2]}' if len(version_code) > 2 else '')
 
 
@@ -144,6 +144,7 @@ comfy_ui_required_commit_datetime = datetime(2024, 1, 24, 0, 0, 0)
 
 comfy_ui_revision = "Unknown"
 comfy_ui_commit_datetime = datetime(1900, 1, 1, 0, 0, 0)
+comfyui_tag = None
 
 channel_dict = None
 channel_list = None

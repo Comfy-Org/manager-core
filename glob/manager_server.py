@@ -13,9 +13,13 @@ import shutil
 import git
 
 from server import PromptServer
-from . import manager_core as core
-from . import manager_util
-from . import cm_global
+
+# NOTE: When running from `comfy-cli`, since `prestartup_script.py` isn't pre-imported, it needs to be guaranteed here.
+sys.path.append(os.path.join(os.path.dirname(__file__)))
+
+import manager_core as core
+import manager_util
+import cm_global
 
 print(f"### Loading: manager-core ({core.version_str})")
 
@@ -139,10 +143,12 @@ def print_comfyui_version():
         is_detached = repo.head.is_detached
         current_branch = repo.active_branch.name
 
-        if current_branch == "master":
-            comfyui_tag = repo.git.describe('--tags', repo.heads.main.commit.hexsha)
-            if not comfyui_tag.startswith("v"):
-                comfyui_tag = None
+        try:
+            core.comfyui_tag = repo.git.describe('--tags', repo.heads.main.commit.hexsha)
+            if not core.comfyui_tag.startswith("v"):
+                core.comfyui_tag = None
+        except:
+            pass
 
         try:
             if core.comfy_ui_commit_datetime.date() < core.comfy_ui_required_commit_datetime.date():
@@ -165,12 +171,15 @@ def print_comfyui_version():
         # <--
 
         if current_branch == "master":
-            if comfyui_tag:
-                print(f"### ComfyUI Version: {comfyui_tag} | Released on '{core.comfy_ui_commit_datetime.date()}'")
+            if core.comfyui_tag:
+                print(f"### ComfyUI Version: {core.comfyui_tag} | Released on '{core.comfy_ui_commit_datetime.date()}'")
             else:
                 print(f"### ComfyUI Revision: {core.comfy_ui_revision} [{comfy_ui_hash[:8]}] | Released on '{core.comfy_ui_commit_datetime.date()}'")
         else:
-            print(f"### ComfyUI Revision: {core.comfy_ui_revision} on '{current_branch}' [{comfy_ui_hash[:8]}] | Released on '{core.comfy_ui_commit_datetime.date()}'")
+            if core.comfyui_tag:
+                print(f"### ComfyUI Version: {core.comfyui_tag} on '{current_branch}' | Released on '{core.comfy_ui_commit_datetime.date()}'")
+            else:
+                print(f"### ComfyUI Revision: {core.comfy_ui_revision} on '{current_branch}' [{comfy_ui_hash[:8]}] | Released on '{core.comfy_ui_commit_datetime.date()}'")
     except:
         if is_detached:
             print(f"### ComfyUI Revision: {core.comfy_ui_revision} [{comfy_ui_hash[:8]}] *DETACHED | Released on '{core.comfy_ui_commit_datetime.date()}'")
