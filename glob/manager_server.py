@@ -13,9 +13,9 @@ import shutil
 import git
 
 from server import PromptServer
-from . import manager_core as core
-from . import manager_util
-from . import cm_global
+import manager_core as core
+import manager_util
+import cm_global
 
 print(f"### Loading: manager-core ({core.version_str})")
 

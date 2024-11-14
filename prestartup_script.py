@@ -11,17 +11,16 @@ import ast
 import logging
 from datetime import datetime
 
-from comfy_cli.command.custom_nodes.command import get_installed_packages
-
 glob_path = os.path.join(os.path.dirname(__file__), "glob")
 sys.path.append(glob_path)
+
+from comfy_cli.command.custom_nodes.command import get_installed_packages
 
 import security_check
 from manager_util import *
 import cm_global
 
 import folder_paths
-
 
 manager_core_config_path = os.path.abspath(os.path.join(folder_paths.get_user_directory(), 'default', 'manager-core.ini'))
 

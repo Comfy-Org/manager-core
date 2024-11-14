@@ -21,9 +21,6 @@ from packaging import version
 
 import uuid
 
-glob_path = os.path.join(os.path.dirname(__file__))  # ComfyUI-Manager/glob
-sys.path.append(glob_path)
-
 import cm_global
 import cnr_utils
 from manager_util import *
