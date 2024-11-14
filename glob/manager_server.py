@@ -13,6 +13,10 @@ import shutil
 import git
 
 from server import PromptServer
+
+glob_path = os.path.join(os.path.dirname(__file__))
+sys.path.append(glob_path)
+
 import manager_core as core
 import manager_util
 import cm_global
