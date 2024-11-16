@@ -11,8 +11,6 @@ import ast
 import logging
 from datetime import datetime
 
-from comfy_cli.command.custom_nodes.command import get_installed_packages
-
 glob_path = os.path.join(os.path.dirname(__file__), "glob")
 sys.path.append(glob_path)
 
