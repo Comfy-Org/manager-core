@@ -29,7 +29,7 @@ import cnr_utils
 from manager_util import *
 
 
-version_code = [1, 1, 3]
+version_code = [1, 1, 4]
 version_str = f"V{version_code[0]}.{version_code[1]}" + (f'.{version_code[2]}' if len(version_code) > 2 else '')
 
 
@@ -216,7 +216,9 @@ def is_installed(name):
 
 
 def normalize_channel(channel):
-    if channel is None:
+    if channel == 'local':
+        return channel
+    elif channel is None:
         return None
     elif channel.startswith('https://'):
         return channel
