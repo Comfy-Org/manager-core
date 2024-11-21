@@ -1589,13 +1589,13 @@ def __win_check_git_update(path, do_fetch=False, do_update=False):
     if do_update:
         if "CUSTOM NODE PULL: Success" in output:
             process.wait()
-            print(f"\rUpdated: {path}")
+            print(f"\x1b[2K\rUpdated: {path}")
             return True, True    # updated
         elif "CUSTOM NODE PULL: None" in output:
             process.wait()
             return False, True   # there is no update
         else:
-            print(f"\rUpdate error: {path}")
+            print(f"\x1b[2K\rUpdate error: {path}")
             process.wait()
             return False, False  # update failed
     else:
@@ -1606,7 +1606,7 @@ def __win_check_git_update(path, do_fetch=False, do_update=False):
             process.wait()
             return False, True
         else:
-            print(f"\rFetch error: {path}")
+            print(f"\x1b[2K\rFetch error: {path}")
             print(f"\n{output}\n")
             process.wait()
             return False, True
@@ -1736,7 +1736,7 @@ def git_repo_update_check_with(path, do_fetch=False, do_update=False, no_deps=Fa
 
                 if commit_hash != new_commit_hash:
                     execute_install_script(None, path, no_deps=no_deps)
-                    print(f"\nUpdated: {path}")
+                    print(f"\x1b[2K\rUpdated: {path}")
                     return True, True
                 else:
                     return False, False
