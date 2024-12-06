@@ -2831,12 +2831,12 @@ async def restore_snapshot(snapshot_path, git_helper_extras=None):
         else:
             if normalized_url1 in git_info:
                 commit_hash = git_info[normalized_url1]['hash']
-                todo_checkout.append((k2, commit_hash))
+                todo_checkout.append((v2[1], commit_hash))
                 processed_urls.append(normalized_url1)
 
             if normalized_url2 in git_info:
                 commit_hash = git_info[normalized_url2]['hash']
-                todo_checkout.append((k2, commit_hash))
+                todo_checkout.append((v2[1], commit_hash))
                 processed_urls.append(normalized_url2)
 
     for k2, v2 in unified_manager.unknown_inactive_nodes.items():
